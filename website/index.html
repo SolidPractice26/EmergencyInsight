@@ -1506,7 +1506,14 @@ td:first-child { color: var(--ink); font-weight: 600; }
       const blob = pdf.output('blob');
       const fname = `Emergency-Insights-${data.property.address.replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '')}.pdf`;
       const downloads = window.claude && window.claude.use ? await window.claude.use('downloads') : null;
-      if (!downloads) { status.textContent = 'The PDF was built, but this page can only save files when it is opened on claude.ai while signed in.'; return; }
+      if (!downloads) {
+        // Hosted on its own website: a normal browser download.
+        const url = URL.createObjectURL(blob), a = document.createElement('a');
+        a.href = url; a.download = fname; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        status.textContent = 'PDF downloaded.';
+        return;
+      }
       try {
         await downloads.save({ filename: fname, data: blob });
         status.textContent = 'PDF saved.';
