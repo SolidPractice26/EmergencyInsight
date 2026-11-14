@@ -137,6 +137,8 @@ td:first-child { color: var(--ink); font-weight: 600; }
 .preview { background: var(--navy); color: var(--white); border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 14px; }
 .preview .item { background: rgba(255,255,255,0.08); border-radius: 10px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .preview .item b { font-size: 18px; }
+[hidden] { display: none !important; }
+.proto-bar { background: #fff6e5; color: #5a4210; font-size: 14px; padding: 8px 0; border-bottom: 1px solid #f0dfbd; }
 .notice { background: #fff6e5; color: #5a4210; border-radius: 10px; padding: 14px 16px; font-size: 15px; }
 
 /* Badge */
@@ -178,6 +180,7 @@ td:first-child { color: var(--ink); font-weight: 600; }
 /* ===== Test lab ===== */
 .lab-controls { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: flex-end; background: var(--mist); border-radius: 12px; padding: 24px; }
 .lab-controls label.lbl { display: block; font-weight: 700; color: var(--navy); font-size: 15px; margin-bottom: 6px; }
+.lab-controls input[type="text"] { height: 50px; width: 100%; max-width: 220px; border: 1.5px solid #c3d3e1; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 16px; color: var(--ink); background: var(--white); }
 .lab-controls select { height: 50px; min-width: 0; width: 100%; max-width: 460px; border: 1.5px solid #c3d3e1; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 16px; color: var(--ink); background: var(--white); }
 .lab-field { flex: 1 1 320px; min-width: 0; }
 .lab-aud { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -297,7 +300,7 @@ td:first-child { color: var(--ink); font-weight: 600; }
 .rp-cv-top img { height: 48px; width: auto; align-self: flex-start; }
 .rp-cv-title { margin-top: auto; }
 .rp-cv-title .e { font-size: 10.5px; font-weight: 600; color: #7BAFD4; text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 14px; }
-.rp-cv-title .h { font-family: var(--display); font-size: 68px; font-weight: 800; color: #fff; line-height: 0.95; letter-spacing: -0.02em; }
+.rp-cv-title .h { font-family: var(--display); font-size: 68px; font-weight: 800; color: #fff; line-height: 1; padding-bottom: 8px; letter-spacing: -0.02em; }
 .rp-cv-title .s { font-size: 15px; font-weight: 400; color: rgba(255,255,255,0.75); margin-top: 18px; }
 .rp-cv-title .r { width: 106px; height: 3px; background: #7BAFD4; margin-top: 20px; border-radius: 2px; }
 .rp-cv-mid { flex: 0 0 360px; padding: 0 60px 0 68px; display: flex; flex-direction: column; justify-content: center; }
@@ -347,6 +350,7 @@ td:first-child { color: var(--ink); font-weight: 600; }
     </nav>
   </div>
 </header>
+<div class="proto-bar"><div class="wrap"><b>Prototype.</b> Florida only. Reports use real NOAA storm records (1996–2025); flood zones are shown for test addresses only.</div></div>
 
 <main>
 
@@ -360,7 +364,7 @@ td:first-child { color: var(--ink); font-weight: 600; }
         <p class="lead">Thinking of buying, about to rent, or living there for years: enter an address and get a plain-English report of every natural hazard recorded there — hurricanes, floods, wind and 15 more — compared with the rest of the U.S.</p>
         <form class="search js-search">
           <label class="sr" for="addr-home">Property address</label>
-          <input id="addr-home" type="text" placeholder="Enter a property address" autocomplete="street-address">
+          <input id="addr-home" type="text" placeholder="Enter an address or ZIP code" autocomplete="street-address">
           <button class="btn btn-steel" type="submit">See the report</button>
         </form>
         <p class="small">History, not a forecast. Built on public NOAA and FEMA records.</p>
@@ -469,7 +473,9 @@ td:first-child { color: var(--ink); font-weight: 600; }
         </div>
         <form class="stack js-search" style="max-width: 640px;">
           <label class="h3" for="addr-report" style="font-size: 17px;">Property address</label>
-          <div class="search on-light"><input id="addr-report" type="text" placeholder="1250 Example Lane, Orlando, FL" autocomplete="street-address"></div>
+          <div class="search on-light"><input id="addr-report" type="text" placeholder="400 S Orange Ave, Orlando, FL 32801" autocomplete="street-address"></div>
+          <p class="small">During the prototype, include the ZIP code. A ZIP code by itself works too.</p>
+          <p class="small" id="flow-err" aria-live="polite" style="color: #9b2c20;"></p>
           <fieldset style="border: 0; padding: 0; margin: 8px 0 0;">
             <legend class="h3" style="font-size: 17px; margin-bottom: 8px;">This report is for someone who is…</legend>
             <div class="row">
@@ -487,22 +493,20 @@ td:first-child { color: var(--ink); font-weight: 600; }
           <h1 class="h2">Is this the right home?</h1>
           <a href="#report" class="js-restart" style="font-weight: 600;">Change address</a>
         </div>
-        <p class="notice">Live reports aren't available yet. You searched for <b id="searched">your address</b>; this preview shows our sample address in Orlando so you can see how it works.</p>
+        <p class="notice" id="flow-notice">You searched for <b id="searched">your address</b>.</p>
         <div class="split" style="align-items: stretch;">
           <div class="panel" style="flex: 999 1 480px;">
             <div class="map"><div><div class="pin"></div><p class="small">Satellite view of the property</p></div></div>
             <div class="row" style="justify-content: space-between; margin-top: 8px;">
-              <div><p style="font-family: var(--display); font-size: 26px; font-weight: 700; color: var(--navy);">1250 Example Lane</p><p class="small">Orlando, FL 32817 · Orange County</p></div>
+              <div><p style="font-family: var(--display); font-size: 26px; font-weight: 700; color: var(--navy);" id="flow-place">1250 Example Lane</p><p class="small" id="flow-sub">Orlando, FL 32817 · Orange County</p></div>
             </div>
           </div>
           <div class="preview" style="flex: 1 1 340px;">
             <p class="eyebrow">Free preview</p>
-            <h2 class="h2" style="font-size: 28px; color: var(--white);">3 hazards stand out at this address</h2>
-            <div class="item"><b>Hurricane</b><span style="color: #f2a29a; font-weight: 700;">Very high</span></div>
-            <div class="item"><b>Riverine Flooding</b><span style="color: #f5c08a; font-weight: 700;">High</span></div>
-            <div class="item"><b>Strong Wind</b><span style="color: #f5c08a; font-weight: 700;">High</span></div>
-            <p style="color: var(--on-navy);">The full report adds the flood zone, nearby flood claims, storm history and when each hazard tends to hit.</p>
-            <p class="small" style="color: var(--on-navy-muted);">Sample address and sample ratings.</p>
+            <h2 class="h2" style="font-size: 28px; color: var(--white);" id="flow-head">3 hazards stand out at this address</h2>
+            <div id="flow-items"></div>
+            <p style="color: var(--on-navy);">The full report adds every hazard's history, when each one tends to hit, the major storms on record and a checklist.</p>
+            <p class="small" style="color: var(--on-navy-muted);" id="flow-foot">Real NOAA records, ranked against every U.S. county.</p>
           </div>
         </div>
         <div class="panel mist" style="border: 0;">
@@ -510,13 +514,18 @@ td:first-child { color: var(--ink); font-weight: 600; }
             <div class="stack">
               <h2 class="h3" style="font-size: 24px;">Your full report</h2>
               <p id="aud-line">Includes a <b>Know Before You Buy</b> page with a before-you-sign checklist.</p>
-              <p class="price">[YOUR PRICE]</p>
+              <p class="small">Free while we test the prototype.</p>
             </div>
             <div class="stack">
-              <a class="btn btn-primary js-waitlist" href="#contact">Join the waitlist for live reports</a>
-              <a class="btn btn-outline" href="#sample">See the sample report</a>
+              <button class="btn btn-primary" type="button" id="flow-pdf">Download the PDF report</button>
+              <a class="btn btn-outline js-waitlist" href="#contact">Join the waitlist</a>
             </div>
           </div>
+          <p class="small" id="flow-pdf-status" aria-live="polite" style="margin-top: 10px;"></p>
+        </div>
+        <div class="stack">
+          <h2 class="h3" style="font-size: 24px;">Preview every page</h2>
+          <div class="preview-scroll" id="flow-preview-pages"></div>
         </div>
       </div>
     </div>
@@ -723,6 +732,11 @@ td:first-child { color: var(--ink); font-weight: 600; }
       </fieldset>
 
       <form class="lab-controls" id="lab-form">
+        <div class="lab-field" id="lab-zip-field">
+          <label class="lbl" for="lab-zip">Florida ZIP code</label>
+          <input id="lab-zip" type="text" inputmode="numeric" maxlength="5" placeholder="e.g. 32801" autocomplete="postal-code">
+          <p class="small" id="lab-zip-msg" aria-live="polite" style="color: #9b2c20; margin-top: 6px;"></p>
+        </div>
         <div class="lab-field">
           <label class="lbl" for="lab-addr" id="lab-addr-label">Place</label>
           <select id="lab-addr"></select>
@@ -763,7 +777,6 @@ td:first-child { color: var(--ink); font-weight: 600; }
       </details>
     </div>
   </div>
-  <div id="rp-offscreen" aria-hidden="true"></div>
 </section>
 
 <!-- ============ PRIVACY & TERMS ============ -->
@@ -782,6 +795,7 @@ td:first-child { color: var(--ink); font-weight: 600; }
 </section>
 
 </main>
+<div id="rp-offscreen" aria-hidden="true"></div>
 
 <footer class="site-footer navy band">
   <div class="wrap">
@@ -840,14 +854,53 @@ td:first-child { color: var(--ink); font-weight: 600; }
     flowAddress.hidden = false; flowPreview.hidden = true;
     step1.setAttribute('aria-current', 'step'); step2.removeAttribute('aria-current');
   }
-  function goPreview(addr) {
+  const flowErr = document.getElementById('flow-err');
+  const flowPdf = document.getElementById('flow-pdf'), flowPdfStatus = document.getElementById('flow-pdf-status');
+  let flowReport = null;
+  const esc2 = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const tierTint = { very_high: '#f2a29a', high: '#f5c08a', moderate: '#f2d48a', low: '#a9cbe6', very_low: '#a9cbe6' };
+
+  async function goPreview(addr) {
     const shown = (addr || '').trim();
-    document.getElementById('searched').textContent = shown || 'your address';
+    flowErr.textContent = '';
+    const lab = window.EI_LAB;
+    if (!lab) { flowErr.textContent = 'The report tools did not load. Reload the page and try again.'; return; }
+    await lab.ready;
+    const r = lab.resolveInput(shown);
+    if (r.error) {
+      flowAddress.hidden = false; flowPreview.hidden = true;
+      step1.setAttribute('aria-current', 'step'); step2.removeAttribute('aria-current');
+      document.getElementById('addr-report').value = shown;
+      flowErr.textContent = r.error;
+      return;
+    }
     const aud = (document.querySelector('input[name="audience"]:checked') || {}).value || 'buying';
+    flowReport = lab.makeReport(r.val, aud);
+    const { loc, data, pages } = flowReport;
+    const exact = !!loc.flood_zone;
+    document.getElementById('flow-notice').innerHTML = exact
+      ? `You searched for <b>${esc2(shown)}</b>. This is one of our test addresses, so the report includes its real FEMA flood zone.`
+      : `You searched for <b>${esc2(shown)}</b>. The prototype finds the area by ZIP code, so this report covers <b>${esc2(loc.county)}</b>. A report for an exact address will add its FEMA flood zone.`;
+    document.getElementById('flow-place').textContent = exact ? loc.address : `ZIP code ${loc.zip_area}`;
+    document.getElementById('flow-sub').textContent = exact ? `${loc.city}, FL ${loc.zip} · ${loc.county}` : `${loc.county}, Florida`;
+    const above = data.hazards.filter(h => h.group === 'above');
+    document.getElementById('flow-head').textContent = above.length
+      ? `${above.length} hazard${above.length === 1 ? '' : 's'} stand${above.length === 1 ? 's' : ''} out ${exact ? 'at this address' : 'in this area'}`
+      : `No hazard stands out ${exact ? 'at this address' : 'in this area'}`;
+    const list = (above.length ? above : data.hazards.slice(0, 3)).slice(0, 5);
+    document.getElementById('flow-items').innerHTML = list.map(h =>
+      `<div class="item"><b>${esc2(h.name)}</b><span style="color: ${tierTint[h.tier_key] || '#a9cbe6'}; font-weight: 700;">${esc2(h.tier)}</span></div>`).join('');
+    document.getElementById('flow-foot').textContent = `Real NOAA records for ${loc.county}, 1996–2025, ranked against every U.S. county.`;
     document.getElementById('aud-line').innerHTML = audLines[aud];
+    flowPdfStatus.textContent = '';
+    const pv = document.getElementById('flow-preview-pages');
+    lab.renderPreview(pv, pages, pv.clientWidth && pv.clientWidth < 500 ? 0.3 : 0.36);
     flowAddress.hidden = true; flowPreview.hidden = false;
     step2.setAttribute('aria-current', 'step'); step1.removeAttribute('aria-current');
   }
+  flowPdf.addEventListener('click', () => {
+    if (flowReport && window.EI_LAB) window.EI_LAB.savePdf(flowReport.pages, flowReport.data, flowPdf, flowPdfStatus);
+  });
 
   document.querySelectorAll('.js-search').forEach(form => {
     form.addEventListener('submit', e => {
@@ -1127,12 +1180,13 @@ td:first-child { color: var(--ink); font-weight: 600; }
     let lead;
     if (zone && claimsInfo) lead = `This property sits in FEMA flood zone ${loc.flood_zone} (${zone[1].toLowerCase()}). Homes in this census tract filed ${claimsInfo.total} flood insurance claims from 1996 to 2025, the most in ${claimsInfo.peak_year} (${claimsInfo.peak_value}).`;
     else if (zone) lead = `This property sits in FEMA flood zone ${loc.flood_zone} (${zone[1].toLowerCase()}). Below are the named storms that caused the most recorded damage in ${loc.county}.`;
+    else if (loc.zip_area) lead = `This report covers ZIP code ${loc.zip_area}, using the records for ${loc.county}.${loc.zip_note} The flood zone is looked up for each address; below are the named storms that caused the most recorded damage in the county.`;
     else lead = `This is a county-level report for ${loc.county}. The flood zone is looked up for each address; below are the named storms that caused the most recorded damage in the county.`;
     const now = new Date();
     return {
       report: { title: 'Home Hazard History', id: `EI-FL-${loc.county.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase()}-${String(Math.floor(rng(loc._addrId)() * 90000) + 10000)}`,
         date: now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }), audience, watermark: WM, data_range: '1996–2025', real_data: !!loc._real },
-      property: { address: loc.address, city: loc.city, state: loc.state, zip: loc.zip, county: loc.county, census_tract: loc.census_tract, latitude: loc.latitude, longitude: loc.longitude },
+      property: { address: loc.address, city: loc.city, state: loc.state, zip: loc.zip, county: loc.county, census_tract: loc.census_tract, latitude: loc.latitude, longitude: loc.longitude, zip_area: loc.zip_area || null },
       headline: above.length ? `${join(above.map(h => h.name))} ${above.length === 1 ? 'has' : 'have'} been recorded here more often than in most of the U.S.` : 'No hazard has been recorded here more often than in most of the U.S.',
       group_counts: counts,
       hazards,
@@ -1174,7 +1228,7 @@ td:first-child { color: var(--ink); font-weight: 600; }
 
   function pageCover(d) {
     return shell(`<div class="rp-cv-top"><img src="img/logo.png" alt=""><div class="rp-cv-title"><div class="e">Emergency Insights Report</div><div class="h">Home<br>Hazard<br>History</div><div class="s">What this address has been through, from public records</div><div class="r"></div></div></div>
-      <div class="rp-cv-mid"><div class="lb">${d.property.zip ? 'Property' : 'Area'}</div><div class="a1">${esc(d.property.address)}</div><div class="a2">${d.property.zip ? `${esc(d.property.city)}, FL ${esc(d.property.zip)} · ${esc(d.property.county)}` : 'Florida · county-level report'}</div>
+      <div class="rp-cv-mid"><div class="lb">${d.property.zip ? 'Property' : 'Area'}</div><div class="a1">${esc(d.property.address)}</div><div class="a2">${d.property.zip ? `${esc(d.property.city)}, FL ${esc(d.property.zip)} · ${esc(d.property.county)}` : d.property.zip_area ? 'Florida · area report by ZIP code' : 'Florida · county-level report'}</div>
       <div class="rp-cv-meta"><div><div class="l">Report date</div><div class="v">${esc(d.report.date)}</div></div><div><div class="l">Report ID</div><div class="v">${esc(d.report.id)}</div></div><div><div class="l">Prepared for</div><div class="v">${{ buying: 'Home buyer', renting: 'Renter', living: 'Resident' }[d.report.audience]}</div></div></div></div>
       <div class="rp-cv-bot"><div class="rp-cv-facts"><div><div class="v">18</div><div class="l">Natural hazards reviewed</div></div><div><div class="v">10–30</div><div class="l">Years of records (${d.report.data_range})</div></div><div><div class="s">NOAA · FEMA · USGS</div><div class="l">Public data sources</div></div></div>
       <div class="rp-cv-foot"><span>Scores describe how often hazards have occurred here in the past. They are not a prediction, and this is not an inspection, appraisal or insurance determination.</span><span>1</span></div></div>`);
@@ -1231,7 +1285,7 @@ td:first-child { color: var(--ink); font-weight: 600; }
       <p class="rp-lead">${esc(det.what)}</p>
       <div class="rp-facts" style="--b:${color}"><div class="rp-fact"><div class="l">National rank</div><div class="v">${h.rank_line}</div></div><div class="rp-fact"><div class="l">History</div><div class="v">${h.history_line}</div></div><div class="rp-fact"><div class="l">Peak season</div><div class="v">${h.season}</div></div><div class="rp-fact"><div class="l">Severity</div><div class="v">${h.severity_line}</div></div></div>
       <div class="rp-label">What has happened in ${esc(d.property.county)}</div>
-      <div class="rp-charts"><div class="rp-chart"><div class="rp-chart-t">${h.events_total} damaging events, ${ys[0]}–${ys[ys.length - 1]}</div><div class="rp-chart-s">Events per year</div>${yearly}</div><div class="rp-chart"><div class="rp-chart-t">Most events fall in ${h.season.split(' (')[0]}</div><div class="rp-chart-s">Events by month, all years combined</div>${monthly}</div></div>
+      <div class="rp-charts"><div class="rp-chart"><div class="rp-chart-t">${h.events_total} damaging event${h.events_total === 1 ? '' : 's'}, ${ys[0]}–${ys[ys.length - 1]}</div><div class="rp-chart-s">Events per year</div>${yearly}</div><div class="rp-chart"><div class="rp-chart-t">Most events fall in ${h.season.split(' (')[0]}</div><div class="rp-chart-s">Events by month, all years combined</div>${monthly}</div></div>
       ${storms.length ? `<div class="rp-label">Named storms on record</div><table class="rp-events">${storms.map(s => `<tr><td>${s.date}</td><td class="n">${s.name}</td><td>${s.summary}</td></tr>`).join('')}</table>` : ''}
       <div class="rp-ins"><div class="l">Insurance</div><div class="t">${esc(det.ins)}</div></div>
       <p class="rp-bottomnote">${d.report.real_data
@@ -1261,8 +1315,25 @@ td:first-child { color: var(--ink); font-weight: 600; }
 
   // ---- Real Florida data (prepared by prepare.py from NOAA records and hurricane tracks) ----
   const REAL_ADDRESSES = [{"label": "Orlando City Hall", "line1": "400 S Orange Ave", "city": "Orlando", "zip": "32801", "fips": "12095", "tract": "189.02", "lat": 28.5383, "lon": -81.379, "zone": "X"}, {"label": "Miami City Hall", "line1": "3500 Pan American Dr", "city": "Miami", "zip": "33133", "fips": "12086", "tract": "68.01", "lat": 25.7287, "lon": -80.235, "zone": "AE"}, {"label": "St. Petersburg City Hall", "line1": "175 5th St N", "city": "St. Petersburg", "zip": "33701", "fips": "12103", "tract": "215.02", "lat": 27.7731, "lon": -82.6401, "zone": "X"}, {"label": "Tallahassee City Hall", "line1": "300 S Adams St", "city": "Tallahassee", "zip": "32301", "fips": "12073", "tract": "2", "lat": 30.4395, "lon": -84.282, "zone": "X"}, {"label": "Tampa City Hall", "line1": "315 E Kennedy Blvd", "city": "Tampa", "zip": "33602", "fips": "12057", "tract": "51.01", "lat": 27.9477, "lon": -82.4578, "zone": "X"}, {"label": "Jacksonville City Hall", "line1": "117 W Duval St", "city": "Jacksonville", "zip": "32202", "fips": "12031", "tract": "172", "lat": 30.3297, "lon": -81.6588, "zone": "X"}, {"label": "Monroe County Courthouse", "line1": "500 Whitehead St", "city": "Key West", "zip": "33040", "fips": "12087", "tract": "9724", "lat": 24.5552, "lon": -81.804, "zone": "X"}, {"label": "Fort Myers City Hall", "line1": "2200 Second St", "city": "Fort Myers", "zip": "33901", "fips": "12071", "tract": "803", "lat": 26.642, "lon": -81.8694, "zone": "X500"}, {"label": "Gainesville City Hall", "line1": "200 E University Ave", "city": "Gainesville", "zip": "32601", "fips": "12001", "tract": "5", "lat": 29.652, "lon": -82.3232, "zone": "X"}, {"label": "Pensacola City Hall", "line1": "222 W Main St", "city": "Pensacola", "zip": "32502", "fips": "12033", "tract": "1", "lat": 30.4069, "lon": -87.218, "zone": "AE"}];
-  let REAL = null;
-  const realReady = fetch('data/florida_db.json').then(r => (r.ok ? r.json() : null)).then(j => { REAL = j; return j; }).catch(() => null);
+  let REAL = null, ZIPS = null;
+  const realReady = Promise.all([
+    fetch('data/florida_db.json').then(r => (r.ok ? r.json() : null)).catch(() => null),
+    fetch('data/fl_zips.json').then(r => (r.ok ? r.json() : null)).catch(() => null)
+  ]).then(([j, z]) => { REAL = j; ZIPS = z; return j; });
+
+  // Turn what someone typed (an address or a ZIP) into a place the database knows.
+  // Returns { val } on success or { error } with a message to show.
+  function resolveInput(text) {
+    const t = (text || '').trim();
+    if (!REAL || !ZIPS) return { error: 'The Florida data is still loading. Try again in a moment.' };
+    const zips = t.match(/\b\d{5}\b/g);
+    if (!zips) return { error: 'Add the 5-digit ZIP code (for example 32801). The prototype finds the area by ZIP code.' };
+    const zip = zips[zips.length - 1];
+    if (!ZIPS[zip]) return { error: `${zip} isn't a Florida ZIP code we know. The prototype covers Florida only.` };
+    const num = (t.match(/^\s*(\d+)\s/) || [])[1];
+    const i = REAL_ADDRESSES.findIndex(a => a.zip === zip && num && a.line1.startsWith(num + ' '));
+    return { val: i >= 0 ? 'addr:' + i : 'zip:' + zip };
+  }
   const money = v => v >= 1e9 ? `$${(v / 1e9).toFixed(1)} billion` : v >= 1e6 ? `$${Math.round(v / 1e6)} million` : v >= 1e3 ? `$${Math.round(v / 1e3)} thousand` : v > 0 ? `$${Math.round(v)}` : 'no dollar amount';
 
   function realGeocode(val) {
@@ -1271,6 +1342,14 @@ td:first-child { color: var(--ink); font-weight: 600; }
       return { address: a.line1, city: a.city, state: 'FL', zip: a.zip, county: c.name, county_fips: a.fips, census_tract: a.tract,
         latitude: a.lat, longitude: a.lon, flood_zone: a.zone, place: a.label,
         source: 'Census geocoder and FEMA National Flood Hazard Layer, looked up in advance', _addrId: val, _real: true };
+    }
+    if (val.startsWith('zip:')) {
+      const zip = val.slice(4), fl = ZIPS[zip], c = REAL.counties[fl[0]];
+      const others = fl.slice(1).map(f => REAL.counties[f].name);
+      return { address: `ZIP ${zip} · ${c.name}`, city: '', state: 'FL', zip: '', county: c.name, county_fips: fl[0], census_tract: null,
+        latitude: c.lat, longitude: c.lon, flood_zone: null, place: `ZIP code ${zip}`, zip_area: zip,
+        zip_note: others.length ? ` Part of this ZIP code is in ${join(others)}; this report uses ${c.name}, where most of it lies.` : '',
+        source: 'Census ZIP code to county table, then the county center from the Census county file', _addrId: val, _real: true };
     }
     const f = val.slice(7), c = REAL.counties[f];
     return { address: c.name, city: '', state: 'FL', zip: '', county: c.name, county_fips: f, census_tract: null,
@@ -1299,7 +1378,8 @@ td:first-child { color: var(--ink); font-weight: 600; }
   function fillPlaces() {
     const mode = modeOf();
     sel.innerHTML = '';
-    document.getElementById('lab-addr-label').textContent = mode === 'real' ? 'Place (real data)' : 'Address (fictional)';
+    document.getElementById('lab-addr-label').textContent = mode === 'real' ? 'Or pick a test place' : 'Address (fictional)';
+    document.getElementById('lab-zip-field').hidden = mode !== 'real';
     if (mode === 'real') {
       const g1 = document.createElement('optgroup'); g1.label = 'Public buildings: address-level report';
       REAL_ADDRESSES.forEach((a, i) => { const o = document.createElement('option'); o.value = 'addr:' + i; o.textContent = `${a.label}, ${a.line1}, ${a.city} · ${REAL.counties[a.fips].name}`; g1.appendChild(o); });
@@ -1345,15 +1425,34 @@ td:first-child { color: var(--ink); font-weight: 600; }
   let lastPages = [], lastData = null;
   const SCALE = 0.36;
 
+  function renderPreview(pv, pages, scale) {
+    pv.innerHTML = '';
+    pages.forEach(html => {
+      const box = document.createElement('div'); box.className = 'rp-scale';
+      box.style.width = (794 * scale) + 'px'; box.style.height = (1123 * scale) + 'px';
+      box.innerHTML = html; box.firstElementChild.style.transform = `scale(${scale})`;
+      pv.appendChild(box);
+    });
+  }
+
+  const zipIn = document.getElementById('lab-zip'), zipMsg = document.getElementById('lab-zip-msg');
+  zipIn.addEventListener('input', () => { zipMsg.textContent = ''; });
+  sel.addEventListener('change', () => { zipIn.value = ''; zipMsg.textContent = ''; });
+
   function build() {
     const mode = modeOf();
     WM = mode === 'real' ? 'PROTOTYPE' : 'SAMPLE';
-    const val = sel.value;
+    let val = sel.value;
+    if (mode === 'real' && zipIn.value.trim()) {
+      const r = resolveInput(zipIn.value);
+      if (r.error) { zipMsg.textContent = r.error; return; }
+      val = r.val;
+    }
     const audience = (document.querySelector('input[name="lab-aud"]:checked') || {}).value || 'buying';
     let t = performance.now();
     const loc = mode === 'real' ? realGeocode(val) : stepGeocode(val);
     const { _addrId, _real, ...locShown } = loc;
-    setStage(1, loc.flood_zone ? `${loc.county}, tract ${loc.census_tract}, flood zone ${loc.flood_zone}` : `${loc.county}, county-level (no address)`, performance.now() - t, locShown);
+    setStage(1, loc.flood_zone ? `${loc.county}, tract ${loc.census_tract}, flood zone ${loc.flood_zone}` : loc.zip_area ? `ZIP ${loc.zip_area} → ${loc.county}, area-level (no flood zone)` : `${loc.county}, county-level (no address)`, performance.now() - t, locShown);
     t = performance.now();
     const db = mode === 'real' ? realLookup(loc) : stepLookup(loc);
     setStage(2, `18 hazard rows, ${db.tract_flood_claims ? Object.keys(db.tract_flood_claims).length + ' years of claims' : 'flood claims not connected yet'}, ${db.storms.length} storms`, performance.now() - t, db);
@@ -1364,13 +1463,7 @@ td:first-child { color: var(--ink); font-weight: 600; }
     const pages = stepTemplates(data);
     setStage(4, `${pages.length} pages filled`, performance.now() - t);
     lastPages = pages; lastData = data;
-    const pv = document.getElementById('lab-preview'); pv.innerHTML = '';
-    pages.forEach(html => {
-      const box = document.createElement('div'); box.className = 'rp-scale';
-      box.style.width = (794 * SCALE) + 'px'; box.style.height = (1123 * SCALE) + 'px';
-      box.innerHTML = html; box.firstElementChild.style.transform = `scale(${SCALE})`;
-      pv.appendChild(box);
-    });
+    renderPreview(document.getElementById('lab-preview'), pages, SCALE);
     document.getElementById('lab-result').hidden = false;
     document.getElementById('lab-pdf-status').textContent = '';
   }
@@ -1385,47 +1478,61 @@ td:first-child { color: var(--ink); font-weight: 600; }
   }
   const pdfBtn = document.getElementById('lab-pdf');
   const pdfStatus = document.getElementById('lab-pdf-status');
-  pdfBtn.addEventListener('click', async () => {
-    if (!lastPages.length) return;
-    pdfBtn.disabled = true; pdfStatus.textContent = 'Building the PDF…';
+  // Builds the PDF from finished pages and offers it as a download. Used by the lab and by "Get a report".
+  async function savePdf(pages, data, btn, status) {
+    if (!pages.length) return;
+    btn.disabled = true; status.textContent = 'Building the PDF…';
+    const off = document.getElementById('rp-offscreen');
     try {
       try {
         await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
         await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
       } catch (e) {
-        pdfStatus.textContent = 'The PDF tools could not load. Check your connection and try again.';
+        status.textContent = 'The PDF tools could not load. Check your connection and try again.';
         return;
       }
       if (document.fonts && document.fonts.ready) await document.fonts.ready;
-      const off = document.getElementById('rp-offscreen');
-      const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-      for (let i = 0; i < lastPages.length; i++) {
-        pdfStatus.textContent = `Building the PDF… page ${i + 1} of ${lastPages.length}`;
-        off.innerHTML = lastPages[i];
+      const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
+      for (let i = 0; i < pages.length; i++) {
+        status.textContent = `Building the PDF… page ${i + 1} of ${pages.length}`;
+        off.innerHTML = pages[i];
         const el = off.firstElementChild;
         await Promise.all([...el.querySelectorAll('img')].map(img => img.complete ? null : new Promise(r => { img.onload = img.onerror = r; })));
-        const canvas = await window.html2canvas(el, { scale: 2, backgroundColor: '#ffffff', logging: false, scrollX: 0, scrollY: 0 });
+        const canvas = await window.html2canvas(el, { scale: 3, width: 794, height: 1123, windowWidth: 794, backgroundColor: '#ffffff', logging: false, scrollX: 0, scrollY: 0 });
         if (i > 0) pdf.addPage();
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, 210, 297);
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
       }
       off.innerHTML = '';
       const blob = pdf.output('blob');
-      const fname = `Emergency-Insights-${lastData.property.address.replace(/[^A-Za-z0-9]+/g, '-')}.pdf`;
+      const fname = `Emergency-Insights-${data.property.address.replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '')}.pdf`;
       const downloads = window.claude && window.claude.use ? await window.claude.use('downloads') : null;
-      if (!downloads) { pdfStatus.textContent = 'The PDF was built, but saving files only works when this page is opened in Claude.'; return; }
+      if (!downloads) { status.textContent = 'The PDF was built, but this page can only save files when it is opened on claude.ai while signed in.'; return; }
       try {
         await downloads.save({ filename: fname, data: blob });
-        pdfStatus.textContent = 'PDF saved.';
+        status.textContent = 'PDF saved.';
       } catch (err) {
-        pdfStatus.textContent = err && err.code === 'declined' ? 'Download canceled.' : 'The PDF could not be saved here. Try again from the Claude app or website.';
+        status.textContent = err && err.code === 'declined' ? 'Download canceled.' : 'The PDF could not be saved here. Try again from the Claude app or website.';
       }
     } catch (err) {
-      pdfStatus.textContent = 'Something went wrong while building the PDF. Try again.';
-      document.getElementById('rp-offscreen').innerHTML = '';
+      status.textContent = 'Something went wrong while building the PDF. Try again.';
+      off.innerHTML = '';
     } finally {
-      pdfBtn.disabled = false;
+      btn.disabled = false;
     }
-  });
+  }
+  pdfBtn.addEventListener('click', () => savePdf(lastPages, lastData, pdfBtn, pdfStatus));
+
+  // Shared with the "Get a report" flow
+  window.EI_LAB = {
+    ready: realReady,
+    resolveInput,
+    makeReport(val, audience) {
+      WM = 'PROTOTYPE';
+      const loc = realGeocode(val), data = stepDataFile(loc, realLookup(loc), audience);
+      return { loc, data, pages: stepTemplates(data) };
+    },
+    renderPreview, savePdf
+  };
 
   // Open in a working state: real data when it loads, made-up data otherwise
   realReady.then(j => {
