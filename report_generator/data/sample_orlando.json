@@ -1,0 +1,306 @@
+{
+  "_note": "SAMPLE DATA. The address is fictional and every number below is made up for layout only. Later, the generator will build this file automatically from an address.",
+  "report_title": "Home Hazard History",
+  "watermark": "SAMPLE",
+  "address_line1": "1250 Example Lane",
+  "city": "Orlando",
+  "state": "FL",
+  "zip": "32817",
+  "county": "Orange County",
+  "report_date": "November 7, 2026",
+  "report_id": "EI-FL-ORA-00001",
+  "prepared_for": "Sample Client",
+  "_audience_note": "Who the report is for: buying, renting or living (see data/audiences.json).",
+  "audience": "buying",
+  "hazard_count": "18",
+  "data_years": "10–30",
+  "data_range": "1996–2025",
+  "data_sources": "NOAA · FEMA · USGS",
+  "_history_note": "Per hazard: national_percentile = share of U.S. counties with fewer recorded events (per square mile) over the hazard's window; years_with_event = years with at least one damaging event; severity = major / moderate / minor / none.",
+  "history": {
+    "hurricane": {
+      "national_percentile": 94,
+      "years_with_event": 14,
+      "severity": "major"
+    },
+    "riverine_flooding": {
+      "national_percentile": 86,
+      "years_with_event": 9,
+      "severity": "moderate"
+    },
+    "strong_wind": {
+      "national_percentile": 78,
+      "years_with_event": 10,
+      "severity": "moderate"
+    },
+    "lightning": {
+      "national_percentile": 65,
+      "years_with_event": 10,
+      "severity": "minor"
+    },
+    "heat_wave": {
+      "national_percentile": 55,
+      "years_with_event": 7,
+      "severity": "minor"
+    },
+    "wildfire": {
+      "national_percentile": 45,
+      "years_with_event": 6,
+      "severity": "moderate"
+    },
+    "tornado": {
+      "national_percentile": 30,
+      "years_with_event": 9,
+      "severity": "major"
+    },
+    "hail": {
+      "national_percentile": 25,
+      "years_with_event": 4,
+      "severity": "minor"
+    },
+    "cold_wave": {
+      "national_percentile": 20,
+      "years_with_event": 2,
+      "severity": "minor"
+    },
+    "drought": {
+      "national_percentile": 15,
+      "years_with_event": 3,
+      "severity": "minor"
+    },
+    "ice_storm": {
+      "national_percentile": 8,
+      "years_with_event": 1,
+      "severity": "minor"
+    },
+    "winter_weather": {
+      "national_percentile": 5,
+      "years_with_event": 1,
+      "severity": "minor"
+    },
+    "earthquake": {
+      "national_percentile": 0,
+      "years_with_event": 0,
+      "severity": "none"
+    },
+    "avalanche": {
+      "national_percentile": 0,
+      "years_with_event": 0,
+      "severity": "none"
+    },
+    "coastal_flooding": {
+      "national_percentile": 0,
+      "years_with_event": 0,
+      "severity": "none"
+    },
+    "landslide": {
+      "national_percentile": 0,
+      "years_with_event": 0,
+      "severity": "none"
+    },
+    "tsunami": {
+      "national_percentile": 0,
+      "years_with_event": 0,
+      "severity": "none"
+    },
+    "volcanic_activity": {
+      "national_percentile": 0,
+      "years_with_event": 0,
+      "severity": "none"
+    }
+  },
+  "property": {
+    "latitude": 28.56,
+    "longitude": -81.23,
+    "census_tract": "Tract 167.31",
+    "flood_zone": "AE",
+    "map_image": ""
+  },
+  "_flood_claims_note": "NFIP flood insurance claims in this property's census tract, by year. SAMPLE numbers.",
+  "flood_claims": {
+    "area_label": "this census tract",
+    "by_year": {
+      "1996": 0,
+      "1997": 0,
+      "1998": 1,
+      "1999": 0,
+      "2000": 0,
+      "2001": 0,
+      "2002": 0,
+      "2003": 0,
+      "2004": 6,
+      "2005": 1,
+      "2006": 0,
+      "2007": 0,
+      "2008": 5,
+      "2009": 0,
+      "2010": 0,
+      "2011": 0,
+      "2012": 1,
+      "2013": 0,
+      "2014": 0,
+      "2015": 0,
+      "2016": 0,
+      "2017": 9,
+      "2018": 0,
+      "2019": 0,
+      "2020": 1,
+      "2021": 0,
+      "2022": 23,
+      "2023": 0,
+      "2024": 4,
+      "2025": 0
+    }
+  },
+  "_events_note": "Major named storms that affected the county. A storm can belong to more than one hazard. Names and dates are real; descriptions are general.",
+  "events": [
+    {
+      "date": "Oct 2024",
+      "name": "Hurricane Milton",
+      "summary": "Strong winds, tornadoes and widespread power outages.",
+      "hazards": [
+        "Hurricane"
+      ]
+    },
+    {
+      "date": "Sep 2022",
+      "name": "Hurricane Ian",
+      "summary": "Record rainfall flooded neighborhoods across the county.",
+      "hazards": [
+        "Hurricane",
+        "Riverine Flooding"
+      ]
+    },
+    {
+      "date": "Sep 2017",
+      "name": "Hurricane Irma",
+      "summary": "Hurricane-force gusts, downed trees and long power outages.",
+      "hazards": [
+        "Hurricane"
+      ]
+    },
+    {
+      "date": "Aug 2008",
+      "name": "Tropical Storm Fay",
+      "summary": "Days of rain flooded low-lying streets and ponds.",
+      "hazards": [
+        "Riverine Flooding"
+      ]
+    },
+    {
+      "date": "Aug 2004",
+      "name": "Hurricane Charley",
+      "summary": "Crossed Orlando with hurricane-force winds and roof damage.",
+      "hazards": [
+        "Hurricane"
+      ]
+    }
+  ],
+  "_detail_note": "Per hazard with a detail page: damaging events per year over its record window, and events by month (Jan..Dec). SAMPLE numbers.",
+  "detail_data": {
+    "hurricane": {
+      "by_year": {
+        "1996": 0,
+        "1997": 0,
+        "1998": 1,
+        "1999": 1,
+        "2000": 0,
+        "2001": 1,
+        "2002": 0,
+        "2003": 0,
+        "2004": 3,
+        "2005": 1,
+        "2006": 0,
+        "2007": 0,
+        "2008": 1,
+        "2009": 0,
+        "2010": 0,
+        "2011": 0,
+        "2012": 1,
+        "2013": 0,
+        "2014": 0,
+        "2015": 0,
+        "2016": 1,
+        "2017": 1,
+        "2018": 0,
+        "2019": 1,
+        "2020": 1,
+        "2021": 0,
+        "2022": 2,
+        "2023": 1,
+        "2024": 3,
+        "2025": 0
+      },
+      "by_month": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        4,
+        8,
+        4,
+        2,
+        0
+      ]
+    },
+    "riverine_flooding": {
+      "by_year": {
+        "2016": 2,
+        "2017": 4,
+        "2018": 1,
+        "2019": 0,
+        "2020": 3,
+        "2021": 2,
+        "2022": 6,
+        "2023": 2,
+        "2024": 5,
+        "2025": 1
+      },
+      "by_month": [
+        1,
+        0,
+        1,
+        1,
+        2,
+        5,
+        4,
+        5,
+        6,
+        1,
+        0,
+        0
+      ]
+    },
+    "strong_wind": {
+      "by_year": {
+        "2016": 5,
+        "2017": 7,
+        "2018": 4,
+        "2019": 6,
+        "2020": 3,
+        "2021": 5,
+        "2022": 8,
+        "2023": 4,
+        "2024": 6,
+        "2025": 3
+      },
+      "by_month": [
+        1,
+        2,
+        5,
+        6,
+        5,
+        8,
+        7,
+        6,
+        4,
+        2,
+        2,
+        3
+      ]
+    }
+  }
+}

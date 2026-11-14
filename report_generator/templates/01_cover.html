@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>{{report_title}} — {{address_line1}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ===== PAGE 1 — COVER =====
+       Every double-brace placeholder is filled by render.py from a data file.
+       Nothing on this page is typed by hand per report. */
+
+    @page { size: A4; margin: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:  #003366;
+      --navy2: #002244;
+      --steel: #7BAFD4;
+      --gray:  #707070;
+      --lgray: #9A9A9A;
+      --rule:  #D8E4EE;
+      --white: #FFFFFF;
+      --sans:  'Source Sans 3', 'Segoe UI', Arial, sans-serif;
+      --serif: 'Playfair Display', Georgia, serif;
+    }
+
+    html, body {
+      background: #d4d4d4;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page {
+      width: 210mm;
+      height: 297mm;
+      margin: 0 auto;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--white);
+      box-shadow: 0 6px 40px rgba(0,0,0,0.22);
+    }
+
+    .accent-stripe {
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 5mm; background: var(--steel); z-index: 10;
+    }
+
+    /* Watermark: shown only when data says "watermark": "SAMPLE" */
+    .watermark {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%) rotate(-38deg);
+      font-family: var(--sans); font-size: 22mm; font-weight: 700;
+      color: rgba(0,0,0,0.05); letter-spacing: 0.08em;
+      white-space: nowrap; pointer-events: none; z-index: 100;
+    }
+    .watermark:empty { display: none; }
+
+    /* ── TOP: navy title block ── */
+    .top {
+      flex: 0 0 140mm;
+      background: var(--navy);
+      position: relative;
+      overflow: hidden;
+      padding: 12mm 16mm 12mm 18mm;
+      display: flex;
+      flex-direction: column;
+    }
+    .top::before {
+      content: ''; position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 12mm 12mm;
+    }
+    .top::after {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 60% -10%, rgba(123,175,212,0.18) 0%, transparent 60%);
+    }
+    .top > * { position: relative; z-index: 2; }
+
+    .logo { height: 13mm; width: auto; display: block; align-self: flex-start; }
+
+    .title-block { margin-top: auto; }
+    .eyebrow {
+      font-family: var(--sans); font-size: 2.8mm; font-weight: 600;
+      color: var(--steel); text-transform: uppercase; letter-spacing: 0.18em;
+      margin-bottom: 4mm;
+    }
+    .title {
+      font-family: var(--serif); font-size: 18mm; font-weight: 800;
+      color: var(--white); line-height: 0.95; letter-spacing: -0.02em;
+      margin-bottom: 5mm;
+    }
+    .subtitle {
+      font-family: var(--sans); font-size: 4mm; font-weight: 300;
+      color: rgba(255,255,255,0.75); letter-spacing: 0.03em;
+      margin-bottom: 6mm;
+    }
+    .title-rule { width: 28mm; height: 0.8mm; background: var(--steel); border-radius: 0.4mm; }
+
+    /* ── MIDDLE: the property ── */
+    .middle {
+      flex: 0 0 95mm;
+      padding: 0 16mm 0 18mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .label {
+      font-family: var(--sans); font-size: 2.5mm; font-weight: 600;
+      color: var(--steel); text-transform: uppercase; letter-spacing: 0.15em;
+      margin-bottom: 2mm;
+    }
+    .address1 {
+      font-family: var(--serif); font-size: 8mm; font-weight: 700;
+      color: var(--navy); line-height: 1.1; letter-spacing: -0.01em;
+    }
+    .address2 {
+      font-family: var(--sans); font-size: 4.2mm; color: var(--gray);
+      margin-top: 1.5mm;
+    }
+    .divider { height: 0.5pt; background: var(--steel); opacity: 0.6; margin: 8mm 0 6mm; }
+
+    .meta { display: flex; }
+    .meta-item {
+      flex: 1;
+      padding-right: 6mm; margin-right: 6mm;
+      border-right: 0.5pt solid var(--rule);
+    }
+    .meta-item:last-child { border-right: none; margin-right: 0; padding-right: 0; }
+    .meta-label {
+      font-family: var(--sans); font-size: 2.4mm; font-weight: 600;
+      color: var(--lgray); text-transform: uppercase; letter-spacing: 0.12em;
+      margin-bottom: 1.2mm;
+    }
+    .meta-value { font-family: var(--sans); font-size: 3.8mm; font-weight: 600; color: var(--navy); }
+
+    /* ── BOTTOM: what the report covers ── */
+    .bottom {
+      flex: 1;
+      background: var(--navy2);
+      padding: 8mm 16mm 6mm 18mm;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    .bottom::before {
+      content: ''; position: absolute; top: -20mm; right: -15mm;
+      width: 80mm; height: 80mm; border-radius: 50%;
+      border: 8mm solid rgba(123,175,212,0.07);
+    }
+    .bottom > * { position: relative; z-index: 2; }
+
+    .facts { display: flex; flex: 1; align-items: center; }
+    .fact {
+      flex: 1;
+      padding-right: 7mm; margin-right: 7mm;
+      border-right: 0.5pt solid rgba(123,175,212,0.3);
+    }
+    .fact:last-child { border-right: none; margin-right: 0; padding-right: 0; flex: 1.3; }
+    .fact-value {
+      font-family: var(--serif); font-size: 8mm; font-weight: 700;
+      color: var(--white); line-height: 1; margin-bottom: 2mm;
+    }
+    .fact-label {
+      font-family: var(--sans); font-size: 2.6mm; color: rgba(255,255,255,0.6);
+      text-transform: uppercase; letter-spacing: 0.1em; line-height: 1.4;
+    }
+    .sources {
+      font-family: var(--sans); font-size: 3.2mm; font-weight: 600;
+      color: var(--white); line-height: 1.5; margin-bottom: 1.5mm;
+    }
+
+    .footer {
+      border-top: 0.5pt solid rgba(255,255,255,0.15);
+      padding-top: 3mm;
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 6mm;
+    }
+    .disclaimer {
+      font-family: var(--sans); font-size: 2.3mm; font-style: italic;
+      color: rgba(255,255,255,0.45); line-height: 1.5; max-width: 140mm;
+    }
+    .page-num { font-family: var(--sans); font-size: 2.8mm; font-weight: 600; color: rgba(255,255,255,0.5); }
+
+    @media print {
+      html, body { background: white; }
+      .page { box-shadow: none; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="watermark">{{watermark}}</div>
+    <div class="accent-stripe"></div>
+
+    <!-- TOP -->
+    <div class="top">
+      <img class="logo" src="{{assets_path}}/EI-Logo.png" alt="Emergency Insights" />
+      <div class="title-block">
+        <div class="eyebrow">Emergency Insights Report</div>
+        <div class="title">Home<br />Hazard<br />History</div>
+        <div class="subtitle">What this address has been through, from public records</div>
+        <div class="title-rule"></div>
+      </div>
+    </div>
+
+    <!-- MIDDLE -->
+    <div class="middle">
+      <div class="label">Property</div>
+      <div class="address1">{{address_line1}}</div>
+      <div class="address2">{{city}}, {{state}} {{zip}} &nbsp;·&nbsp; {{county}}</div>
+
+      <div class="divider"></div>
+
+      <div class="meta">
+        <div class="meta-item">
+          <div class="meta-label">Report date</div>
+          <div class="meta-value">{{report_date}}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Report ID</div>
+          <div class="meta-value">{{report_id}}</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Prepared for</div>
+          <div class="meta-value">{{prepared_for}}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM -->
+    <div class="bottom">
+      <div class="facts">
+        <div class="fact">
+          <div class="fact-value">{{hazard_count}}</div>
+          <div class="fact-label">Natural hazards<br />reviewed</div>
+        </div>
+        <div class="fact">
+          <div class="fact-value">{{data_years}}</div>
+          <div class="fact-label">Years of recorded<br />events ({{data_range}})</div>
+        </div>
+        <div class="fact">
+          <div class="sources">{{data_sources}}</div>
+          <div class="fact-label">Public data sources</div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="disclaimer">
+          Scores describe how often hazards have occurred in this area in the past. They are not a prediction
+          or guarantee of future events, and are not an inspection, appraisal, or insurance determination.
+        </div>
+        <div class="page-num">1</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

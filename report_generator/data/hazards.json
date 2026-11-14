@@ -1,0 +1,170 @@
+{
+  "_note": "Master list of the 18 FEMA National Risk Index hazards. The PDF and the website should both read their hazard names and short descriptions from here, so they always say the same thing. window_years: how many years of records are used. Rare hazards get 30 years so one quiet decade doesn't hide them; common ones get 10. detail: the written content for that hazard's detail page (only needed for hazards that get a page).",
+  "hazards": [
+    {
+      "id": "avalanche",
+      "name": "Avalanche",
+      "plan_line": "Mountain snow slides; relevant only in steep, snowy terrain.",
+      "window_years": 30
+    },
+    {
+      "id": "coastal_flooding",
+      "name": "Coastal Flooding",
+      "plan_line": "Seawater pushed inland by storms or high tides.",
+      "window_years": 30
+    },
+    {
+      "id": "cold_wave",
+      "name": "Cold Wave",
+      "plan_line": "Protect pipes, plants and people during hard freezes.",
+      "window_years": 10
+    },
+    {
+      "id": "drought",
+      "name": "Drought",
+      "plan_line": "Watch for water limits, dry lawns and shifting soil.",
+      "window_years": 10
+    },
+    {
+      "id": "earthquake",
+      "name": "Earthquake",
+      "plan_line": "Ground shaking; secure heavy furniture and water heaters.",
+      "window_years": 30
+    },
+    {
+      "id": "hail",
+      "name": "Hail",
+      "plan_line": "Check roof and vehicle coverage; hail damage is costly.",
+      "window_years": 10
+    },
+    {
+      "id": "heat_wave",
+      "name": "Heat Wave",
+      "plan_line": "Keep A/C serviced and know the signs of heat illness.",
+      "window_years": 10
+    },
+    {
+      "id": "hurricane",
+      "name": "Hurricane",
+      "plan_line": "Plan for wind and water damage, shutters, insurance and an evacuation route.",
+      "window_years": 30,
+      "detail": {
+        "what_it_is": "A tropical storm with sustained winds of 74 mph or more. Inland areas like Central Florida feel it mostly as damaging wind, spin-off tornadoes and days of heavy rain, rather than storm surge.",
+        "before_buying": [
+          "Ask for a wind mitigation inspection; in Florida it can lower the insurance premium.",
+          "Check the roof's age and type. Insurers may limit coverage on older roofs.",
+          "Get insurance quotes before making an offer; hurricane coverage drives the price."
+        ],
+        "upgrades": [
+          "Impact-rated windows or hurricane shutters",
+          "Roof-to-wall straps or clips",
+          "A wind-rated garage door"
+        ],
+        "seasonal": [
+          "Hurricane season runs June 1 to November 30.",
+          "Keep a 7-day supply kit and a plan for power outages.",
+          "Trim trees near the house before summer."
+        ],
+        "insurance": "Florida homeowners policies usually carry a separate hurricane deductible, often a percentage of the home's insured value. Flood damage is not covered without a separate flood policy."
+      }
+    },
+    {
+      "id": "ice_storm",
+      "name": "Ice Storm",
+      "plan_line": "Expect power outages and fallen limbs; trim trees near lines.",
+      "window_years": 10
+    },
+    {
+      "id": "landslide",
+      "name": "Landslide",
+      "plan_line": "Ground movement on slopes, often after heavy rain.",
+      "window_years": 30
+    },
+    {
+      "id": "lightning",
+      "name": "Lightning",
+      "plan_line": "Use surge protection; consider a lightning protection system.",
+      "window_years": 10
+    },
+    {
+      "id": "riverine_flooding",
+      "name": "Riverine Flooding",
+      "plan_line": "Heavy rain overwhelms rivers, lakes and drains; check flood insurance.",
+      "window_years": 10,
+      "detail": {
+        "what_it_is": "Flooding from heavy rain when rivers, lakes, canals and storm drains overflow. In flat, low areas like much of Central Florida, water can sit for days after a big storm.",
+        "before_buying": [
+          "Ask for the elevation certificate and compare it with the base flood elevation.",
+          "Look at how the lot sits against the street and any nearby ponds or canals.",
+          "Ask the seller whether water has ever entered the home or garage."
+        ],
+        "upgrades": [
+          "Grade the yard so water drains away from the house",
+          "Extend downspouts and keep gutters clear",
+          "Raise the A/C unit and water heater above flood level"
+        ],
+        "seasonal": [
+          "Most heavy rain falls in the summer wet season and during tropical storms.",
+          "Clear storm drains and gutters before summer.",
+          "Never drive through flooded roads."
+        ],
+        "insurance": "Homeowners insurance does not cover flood. National Flood Insurance Program policies usually take 30 days to start, so buy before a storm is in the forecast."
+      }
+    },
+    {
+      "id": "strong_wind",
+      "name": "Strong Wind",
+      "plan_line": "Secure outdoor items and check roof, doors and windows.",
+      "window_years": 10,
+      "detail": {
+        "what_it_is": "Damaging straight-line winds from thunderstorms, separate from hurricanes and tornadoes. They can bring down trees and power lines and damage roofs with little warning.",
+        "before_buying": [
+          "Look for large trees or limbs hanging over the roof.",
+          "Ask about the roof's age and any past wind damage claims.",
+          "Check the condition of fences, sheds and pool enclosures."
+        ],
+        "upgrades": [
+          "Repair loose shingles, soffits and flashing",
+          "Anchor sheds, fences and pool enclosures",
+          "Add surge protection for outages and power flickers"
+        ],
+        "seasonal": [
+          "Severe thunderstorms are most common on spring and summer afternoons.",
+          "Bring in or tie down patio furniture before storms.",
+          "Keep weather alerts turned on."
+        ],
+        "insurance": "Thunderstorm wind damage is usually covered by standard homeowners insurance, typically under the regular deductible rather than the hurricane deductible."
+      }
+    },
+    {
+      "id": "tornado",
+      "name": "Tornado",
+      "plan_line": "Know your safe room and keep a weather alert on.",
+      "window_years": 30
+    },
+    {
+      "id": "tsunami",
+      "name": "Tsunami",
+      "plan_line": "Ocean waves from undersea quakes; coastal areas only.",
+      "window_years": 30
+    },
+    {
+      "id": "volcanic_activity",
+      "name": "Volcanic Activity",
+      "plan_line": "Ash and lava hazards near active volcanoes.",
+      "window_years": 30
+    },
+    {
+      "id": "wildfire",
+      "name": "Wildfire",
+      "plan_line": "Clear brush near the house and keep gutters free of debris.",
+      "window_years": 30
+    },
+    {
+      "id": "winter_weather",
+      "name": "Winter Weather",
+      "plan_line": "Snow and freezing rain; plan for travel and outages.",
+      "window_years": 10
+    }
+  ]
+}

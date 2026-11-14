@@ -1,0 +1,46 @@
+{
+  "_note": "Page 3 changes with who the report is for. Set \"audience\" in the property's data file to buying, renting or living. Checklist items with \"zone\": \"high\" only show in high-risk flood zones; \"other\" only outside them. {zone} is replaced with the flood zone code.",
+  "audiences": {
+    "buying": {
+      "label": "Buying",
+      "page_title": "Know Before You Buy",
+      "checklist_title": "Before you sign",
+      "checklist": [
+        {"zone": "high",  "bold": "Get a flood insurance quote now.", "text": "Required for most mortgages in zone {zone}; it can change what you can afford."},
+        {"zone": "other", "bold": "Get a flood insurance quote.", "text": "Optional here, but often inexpensive outside high-risk zones."},
+        {"bold": "Ask for the elevation certificate.", "text": "It shows how high the home sits relative to expected flood levels."},
+        {"bold": "Ask the seller about past flooding", "text": "and any insurance claims on the home."},
+        {"bold": "Check roof age and storm protection", "text": "(shutters, impact windows, roof straps)."},
+        {"bold": "Walk the street after heavy rain", "text": "if you can; look for standing water and drainage."},
+        {"bold": "Know your evacuation zone", "text": "and route from the county emergency office."}
+      ]
+    },
+    "renting": {
+      "label": "Renting",
+      "page_title": "Know Before You Sign the Lease",
+      "checklist_title": "Before you sign the lease",
+      "checklist": [
+        {"bold": "Renter's insurance does not cover flood.", "text": "Ask about a contents-only flood policy, available through the National Flood Insurance Program."},
+        {"bold": "Ask the landlord about past flooding", "text": "in the unit, the building and the parking lot."},
+        {"zone": "high", "bold": "This home is in high-risk zone {zone}.", "text": "Ask whether the ground-floor units have flooded before."},
+        {"bold": "Ask who handles storm prep", "text": "such as shutters, drains and generators, and who pays for storm damage repairs."},
+        {"bold": "Photograph your belongings", "text": "when you move in; it makes insurance claims much easier."},
+        {"bold": "Know your evacuation zone", "text": "and route from the county emergency office."}
+      ]
+    },
+    "living": {
+      "label": "Living there",
+      "page_title": "What Your Home Has Been Through",
+      "checklist_title": "Worth checking",
+      "checklist": [
+        {"bold": "Review your insurance policy.", "text": "Check whether flood is covered and how your hurricane deductible works."},
+        {"zone": "high",  "bold": "You are in high-risk zone {zone}.", "text": "If you don't have flood insurance, it is worth getting a quote."},
+        {"zone": "other", "bold": "Flood insurance is optional here,", "text": "but often inexpensive outside high-risk zones."},
+        {"bold": "Find your elevation certificate.", "text": "It is often in your closing documents or available from the county."},
+        {"bold": "Check roof age and storm protection", "text": "(shutters, impact windows, roof straps)."},
+        {"bold": "Clear gutters and storm drains", "text": "before the summer rainy season."},
+        {"bold": "Know your evacuation zone", "text": "and route from the county emergency office."}
+      ]
+    }
+  }
+}

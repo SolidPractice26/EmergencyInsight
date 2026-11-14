@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hazard Details — {{ address_line1 }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ===== PAGES 4+ — HAZARD DETAIL =====
+       One page per hazard above the U.S. norm (see DETAIL_GROUPS in render.py).
+       Numbers come from the data file; the writing comes from hazards.json. */
+
+    @page { size: A4; margin: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:  #003366;
+      --navy2: #002244;
+      --steel: #7BAFD4;
+      --gray:  #707070;
+      --lgray: #9A9A9A;
+      --rule:  #D8E4EE;
+      --soft:  #F4F7FA;
+      --white: #FFFFFF;
+      --t-very_high: #B03A2E;
+      --t-high:      #DB6B3C;
+      --t-moderate:  #D9A02B;
+      --t-low:       #7BAFD4;
+      --t-very_low:  #A9C8E0;
+      --t-none:      #C5CDD5;
+      --sans:  'Source Sans 3', 'Segoe UI', Arial, sans-serif;
+      --serif: 'Playfair Display', Georgia, serif;
+    }
+
+    html, body { background: #d4d4d4; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    .page {
+      width: 210mm; height: 297mm; margin: 0 auto 10mm;
+      position: relative; display: flex; flex-direction: column;
+      overflow: hidden; background: var(--white);
+      box-shadow: 0 6px 40px rgba(0,0,0,0.22);
+      font-family: var(--sans); color: var(--navy);
+      break-after: page;
+    }
+    .page:last-child { break-after: auto; }
+    .accent-stripe { position: absolute; left: 0; top: 0; bottom: 0; width: 5mm; background: var(--steel); z-index: 10; }
+    .watermark {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%) rotate(-38deg);
+      font-size: 22mm; font-weight: 700; color: rgba(0,0,0,0.04);
+      letter-spacing: 0.08em; white-space: nowrap; pointer-events: none; z-index: 100;
+    }
+    .watermark:empty { display: none; }
+
+    .header {
+      flex: 0 0 16mm; background: var(--navy);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16mm 0 18mm;
+    }
+    .header img { height: 8.5mm; width: auto; }
+    .header-right { text-align: right; }
+    .header-title { font-size: 2.5mm; font-weight: 600; color: var(--steel); text-transform: uppercase; letter-spacing: 0.15em; }
+    .header-address { font-size: 2.8mm; color: rgba(255,255,255,0.75); margin-top: 0.6mm; }
+
+    .body { flex: 1; padding: 9mm 16mm 0 18mm; display: flex; flex-direction: column; }
+    .eyebrow { font-size: 2.5mm; font-weight: 600; color: var(--steel); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 1.5mm; }
+
+    /* Title row with the rating */
+    .title-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 6mm; }
+    h1 { font-family: var(--serif); font-size: 11mm; font-weight: 800; letter-spacing: -0.01em; line-height: 1.02; }
+    .rating { text-align: right; flex-shrink: 0; }
+    .rating-tier { font-family: var(--serif); font-size: 8mm; font-weight: 700; line-height: 1; color: var(--tier); }
+    .rating-score { font-size: 3.2mm; font-weight: 700; color: var(--gray); margin-top: 1mm; }
+    .rating-score b { color: var(--navy); font-size: 4mm; }
+
+    .what { font-size: 3.6mm; line-height: 1.5; color: #2B3B4C; margin-top: 4mm; max-width: 172mm; }
+
+    /* Fact strip */
+    .facts { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 5mm; border-top: 0.8mm solid var(--tier); background: var(--soft); border-radius: 0 0 1.5mm 1.5mm; }
+    .fact { padding: 3mm 3.5mm; border-right: 0.5pt solid var(--rule); }
+    .fact:last-child { border-right: none; }
+    .fact-label { font-size: 2.3mm; font-weight: 700; color: var(--lgray); text-transform: uppercase; letter-spacing: 0.1em; }
+    .fact-value { font-size: 3.2mm; font-weight: 600; color: var(--navy); line-height: 1.35; margin-top: 1mm; }
+
+    .section-label {
+      font-size: 2.6mm; font-weight: 700; color: var(--navy); text-transform: uppercase;
+      letter-spacing: 0.12em; margin: 6.5mm 0 3mm; padding-bottom: 1.5mm; border-bottom: 0.5pt solid var(--rule);
+    }
+
+    /* Two charts */
+    .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 7mm; }
+    .chart-title { font-size: 3.2mm; font-weight: 700; }
+    .chart-sub { font-size: 2.5mm; color: var(--gray); margin-top: 0.5mm; }
+    .chart svg { width: 100%; height: auto; display: block; margin-top: 2mm; }
+
+    /* Prepare: three columns */
+    .prep { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; }
+    .prep-col { border: 0.5pt solid var(--rule); border-radius: 1.5mm; padding: 3.5mm 3.5mm 3mm; }
+    .prep-title { font-size: 2.6mm; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--navy); margin-bottom: 2mm; }
+    .prep ul { list-style: none; }
+    .prep li { position: relative; padding-left: 3.5mm; font-size: 2.95mm; line-height: 1.45; color: #2B3B4C; margin-bottom: 1.6mm; }
+    .prep li::before { content: ''; position: absolute; left: 0; top: 1.5mm; width: 1.4mm; height: 1.4mm; border-radius: 50%; background: var(--steel); }
+
+    .events { width: 100%; border-collapse: collapse; }
+    .events td { padding: 1.6mm 2mm 1.6mm 0; border-bottom: 0.5pt solid var(--rule); font-size: 3mm; line-height: 1.4; vertical-align: top; }
+    .events tr:last-child td { border-bottom: none; }
+    .ev-date { width: 20mm; font-weight: 700; color: var(--gray); white-space: nowrap; }
+    .ev-name { width: 44mm; font-weight: 700; white-space: nowrap; }
+    .ev-text { color: #3D4A57; }
+
+    .insurance {
+      display: flex; gap: 4mm; align-items: flex-start;
+      margin-top: 6mm; padding: 4mm 4.5mm; background: var(--navy); color: var(--white); border-radius: 1.5mm;
+    }
+    .insurance-label { font-size: 2.6mm; font-weight: 700; color: var(--steel); text-transform: uppercase; letter-spacing: 0.12em; white-space: nowrap; padding-top: 0.4mm; }
+    .insurance-text { font-size: 3.1mm; line-height: 1.5; color: rgba(255,255,255,0.9); }
+
+    .note { font-size: 2.5mm; color: var(--gray); line-height: 1.45; margin-top: auto; padding-top: 4mm; margin-bottom: 4mm; }
+
+    .footer {
+      flex: 0 0 11mm; margin: 0 16mm 0 18mm;
+      border-top: 0.5pt solid var(--steel);
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 2.5mm; color: var(--lgray);
+    }
+    .footer .page-num { font-weight: 700; color: var(--navy); font-size: 3mm; }
+
+    @media print { html, body { background: white; } .page { box-shadow: none; margin: 0; } }
+  </style>
+</head>
+<body>
+{% macro chart(c, accent) -%}
+  <svg viewBox="-14 -14 {{ c.width + 28 }} {{ c.height + 30 }}" role="img">
+    <line x1="0" x2="{{ c.width }}" y1="{{ c.height }}" y2="{{ c.height }}" stroke="#B9C7D4" stroke-width="1" />
+    {% for b in c.bars %}
+      {% if b.value > 0 %}
+      <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" rx="1.5"
+            fill="{{ accent if b.peak else '#7BAFD4' }}" />
+      {% endif %}
+      {% if b.show_value %}
+      <text x="{{ b.x + b.w / 2 }}" y="{{ b.y - 4 }}" text-anchor="middle" font-size="10" font-weight="700"
+            fill="#003366" font-family="Source Sans 3, Arial, sans-serif">{{ b.value }}</text>
+      {% endif %}
+      {% if b.tick %}
+      <text x="{{ b.x + b.w / 2 }}" y="{{ c.height + 13 }}" text-anchor="middle" font-size="9.5"
+            fill="#707070" font-family="Source Sans 3, Arial, sans-serif">{{ b.label }}</text>
+      {% endif %}
+    {% endfor %}
+  </svg>
+{%- endmacro %}
+
+{% for h in details %}
+  <div class="page" style="--tier: var(--t-{{ h.tier.key }})">
+    <div class="watermark">{{ watermark }}</div>
+    <div class="accent-stripe"></div>
+
+    <div class="header">
+      <img src="{{ assets_path }}/EI-Logo.png" alt="Emergency Insights" />
+      <div class="header-right">
+        <div class="header-title">{{ report_title }}</div>
+        <div class="header-address">{{ address_line1 }}, {{ city }}, {{ state }} {{ zip }}</div>
+      </div>
+    </div>
+
+    <div class="body">
+      <div class="eyebrow">Section 2 · Hazard detail {{ loop.index }} of {{ loop.length }}</div>
+      <div class="title-row">
+        <h1>{{ h.name }}</h1>
+        <div class="rating">
+          <div class="rating-tier">{{ h.tier.label }}</div>
+          <div class="rating-score"><b>{{ h.score }}</b> / 10 vs. U.S. counties</div>
+        </div>
+      </div>
+      <p class="what">{{ h.detail.what_it_is }}</p>
+
+      <div class="facts">
+        <div class="fact"><div class="fact-label">National rank</div><div class="fact-value">{{ h.rank_line }}</div></div>
+        <div class="fact"><div class="fact-label">History</div><div class="fact-value">{{ h.history_line }}</div></div>
+        <div class="fact"><div class="fact-label">Peak season</div><div class="fact-value">{{ h.season }}</div></div>
+        <div class="fact"><div class="fact-label">Severity</div><div class="fact-value">{{ h.severity_line }}</div></div>
+      </div>
+
+      <div class="section-label">What has happened in {{ county }}</div>
+      <div class="charts">
+        <div class="chart">
+          <div class="chart-title">{{ h.event_total }} damaging events, {{ h.window_first }}–{{ h.window_last }}</div>
+          <div class="chart-sub">Events per year</div>
+          {{ chart(h.yearly, '#003366') }}
+        </div>
+        <div class="chart">
+          <div class="chart-title">Most events fall in {{ h.season.split(' (')[0] }}</div>
+          <div class="chart-sub">Events by month, all years combined</div>
+          {{ chart(h.monthly, '#003366') }}
+        </div>
+      </div>
+
+      <div class="section-label">How to prepare</div>
+      <div class="prep" {% if audience != 'buying' %}style="grid-template-columns: repeat(2, 1fr)"{% endif %}>
+        {% if audience == 'buying' %}
+        <div class="prep-col">
+          <div class="prep-title">Before you buy</div>
+          <ul>{% for x in h.detail.before_buying %}<li>{{ x }}</li>{% endfor %}</ul>
+        </div>
+        {% endif %}
+        <div class="prep-col">
+          <div class="prep-title">Upgrades that help</div>
+          <ul>{% for x in h.detail.upgrades %}<li>{{ x }}</li>{% endfor %}</ul>
+        </div>
+        <div class="prep-col">
+          <div class="prep-title">Every year</div>
+          <ul>{% for x in h.detail.seasonal %}<li>{{ x }}</li>{% endfor %}</ul>
+        </div>
+      </div>
+
+      {% if h.events %}
+      <div class="section-label">Named storms on record</div>
+      <table class="events">
+        {% for e in h.events %}
+        <tr><td class="ev-date">{{ e.date }}</td><td class="ev-name">{{ e.name }}</td><td class="ev-text">{{ e.summary }}</td></tr>
+        {% endfor %}
+      </table>
+      {% endif %}
+
+      <div class="insurance">
+        <div class="insurance-label">Insurance</div>
+        <div class="insurance-text">{{ h.detail.insurance }}</div>
+      </div>
+
+      <p class="note">
+        Events are damaging {{ h.name|lower }} events recorded for {{ county }} in NOAA's Storm Events Database
+        over {{ h.window_years }} years. The rating compares this county with every U.S. county; it describes
+        the past and is not a forecast. General guidance only — confirm insurance details with a licensed agent.
+      </p>
+    </div>
+
+    <div class="footer">
+      <span>© Emergency Insights · Report {{ report_id }}</span>
+      <span class="page-num">{{ h.page_num }}</span>
+      <span>{{ report_date }}</span>
+    </div>
+  </div>
+{% endfor %}
+</body>
+</html>

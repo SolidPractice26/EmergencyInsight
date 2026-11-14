@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>{{ audience_info.page_title }} — {{ address_line1 }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ===== PAGE 3 — KNOW BEFORE YOU BUY =====
+       The property-level page: flood zone, local flood claims,
+       major storms on record, and what to check before signing. */
+
+    @page { size: A4; margin: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:  #003366;
+      --navy2: #002244;
+      --steel: #7BAFD4;
+      --gray:  #707070;
+      --lgray: #9A9A9A;
+      --rule:  #D8E4EE;
+      --soft:  #F4F7FA;
+      --white: #FFFFFF;
+      --red:   #B03A2E;
+      --amber: #D9A02B;
+      --sans:  'Source Sans 3', 'Segoe UI', Arial, sans-serif;
+      --serif: 'Playfair Display', Georgia, serif;
+    }
+
+    html, body { background: #d4d4d4; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    .page {
+      width: 210mm; height: 297mm; margin: 0 auto;
+      position: relative; display: flex; flex-direction: column;
+      overflow: hidden; background: var(--white);
+      box-shadow: 0 6px 40px rgba(0,0,0,0.22);
+      font-family: var(--sans); color: var(--navy);
+    }
+    .accent-stripe { position: absolute; left: 0; top: 0; bottom: 0; width: 5mm; background: var(--steel); z-index: 10; }
+    .watermark {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%) rotate(-38deg);
+      font-size: 22mm; font-weight: 700; color: rgba(0,0,0,0.04);
+      letter-spacing: 0.08em; white-space: nowrap; pointer-events: none; z-index: 100;
+    }
+    .watermark:empty { display: none; }
+
+    .header {
+      flex: 0 0 16mm; background: var(--navy);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16mm 0 18mm;
+    }
+    .header img { height: 8.5mm; width: auto; }
+    .header-right { text-align: right; }
+    .header-title { font-size: 2.5mm; font-weight: 600; color: var(--steel); text-transform: uppercase; letter-spacing: 0.15em; }
+    .header-address { font-size: 2.8mm; color: rgba(255,255,255,0.75); margin-top: 0.6mm; }
+
+    .body { flex: 1; padding: 9mm 16mm 0 18mm; display: flex; flex-direction: column; }
+    .eyebrow { font-size: 2.5mm; font-weight: 600; color: var(--steel); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 1.5mm; }
+    h1 { font-family: var(--serif); font-size: 10mm; font-weight: 800; letter-spacing: -0.01em; line-height: 1.05; }
+    .lead { font-size: 3.9mm; color: #2B3B4C; line-height: 1.45; margin-top: 3.5mm; max-width: 170mm; }
+
+    .section-label {
+      font-size: 2.6mm; font-weight: 700; color: var(--navy); text-transform: uppercase;
+      letter-spacing: 0.12em; margin: 5.5mm 0 2.5mm; padding-bottom: 1.5mm; border-bottom: 0.5pt solid var(--rule);
+    }
+
+    /* Map + flood zone */
+    .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; margin-top: 5.5mm; }
+    .map {
+      height: 44mm; border-radius: 1.5mm; position: relative; overflow: hidden;
+      background:
+        linear-gradient(rgba(0,51,102,0.06) 1px, transparent 1px) 0 0 / 6mm 6mm,
+        linear-gradient(90deg, rgba(0,51,102,0.06) 1px, transparent 1px) 0 0 / 6mm 6mm,
+        var(--soft);
+      border: 0.5pt solid var(--rule);
+      display: flex; align-items: center; justify-content: center; text-align: center;
+    }
+    .map img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .map-pin { width: 5mm; height: 5mm; border-radius: 50%; background: var(--red); border: 1.2mm solid var(--white); box-shadow: 0 0 0 0.4mm var(--red); margin: 0 auto 2.5mm; }
+    .map-note { font-size: 2.8mm; color: var(--gray); line-height: 1.4; }
+    .map-coords { position: absolute; left: 3mm; bottom: 2.5mm; font-size: 2.4mm; color: var(--gray); background: rgba(255,255,255,0.85); padding: 0.6mm 1.6mm; border-radius: 0.8mm; }
+
+    .zone {
+      border-radius: 1.5mm; padding: 4.5mm 5mm; color: var(--white); background: var(--navy);
+      display: flex; flex-direction: column;
+    }
+    .zone-label { font-size: 2.5mm; font-weight: 700; color: var(--steel); text-transform: uppercase; letter-spacing: 0.12em; }
+    .zone-row { display: flex; align-items: baseline; gap: 3mm; margin-top: 2mm; }
+    .zone-code { font-family: var(--serif); font-size: 14mm; font-weight: 800; line-height: 0.9; }
+    .zone-title { font-size: 4mm; font-weight: 700; }
+    .zone-title.high { color: #F2A29A; }
+    .zone-title.moderate { color: #F5C08A; }
+    .zone-title.low { color: var(--steel); }
+    .zone-text { font-size: 2.9mm; line-height: 1.5; color: rgba(255,255,255,0.85); margin-top: auto; padding-top: 3mm; }
+
+    /* Flood claims chart */
+    .chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 4mm; }
+    .chart-title { font-size: 3.4mm; font-weight: 700; }
+    .chart-sub { font-size: 2.6mm; color: var(--gray); }
+    .chart svg { width: 100%; height: auto; display: block; margin-top: 2.5mm; }
+    .chart-note { font-size: 2.6mm; color: var(--gray); margin-top: 1.5mm; }
+
+    /* Storm list */
+    .events { width: 100%; border-collapse: collapse; }
+    .events td { padding: 1.6mm 2mm 1.6mm 0; border-bottom: 0.5pt solid var(--rule); vertical-align: top; font-size: 3mm; line-height: 1.4; }
+    .events tr:last-child td { border-bottom: none; }
+    .ev-date { width: 20mm; font-weight: 700; color: var(--gray); white-space: nowrap; }
+    .ev-name { width: 40mm; font-weight: 700; white-space: nowrap; }
+    .ev-tag-cell { width: 44mm; }
+    .ev-tag { display: inline-block; font-size: 2.2mm; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--steel); margin-top: 0.5mm; white-space: nowrap; }
+    .ev-text { color: #3D4A57; }
+
+    /* Checklist */
+    .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 2mm 5mm; }
+    .check { display: flex; gap: 2.5mm; font-size: 2.9mm; line-height: 1.45; color: #2B3B4C; }
+    .check i { flex: 0 0 3.4mm; height: 3.4mm; border: 0.35mm solid var(--navy); border-radius: 0.7mm; margin-top: 0.4mm; }
+    .check strong { color: var(--navy); }
+
+    .footer {
+      flex: 0 0 11mm; margin: auto 16mm 0 18mm;
+      border-top: 0.5pt solid var(--steel);
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 2.5mm; color: var(--lgray);
+    }
+    .footer .page-num { font-weight: 700; color: var(--navy); font-size: 3mm; }
+
+    @media print { html, body { background: white; } .page { box-shadow: none; margin: 0; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="watermark">{{ watermark }}</div>
+    <div class="accent-stripe"></div>
+
+    <div class="header">
+      <img src="{{ assets_path }}/EI-Logo.png" alt="Emergency Insights" />
+      <div class="header-right">
+        <div class="header-title">{{ report_title }}</div>
+        <div class="header-address">{{ address_line1 }}, {{ city }}, {{ state }} {{ zip }}</div>
+      </div>
+    </div>
+
+    <div class="body">
+      <div class="eyebrow">Section 1 · This property</div>
+      <h1>{{ audience_info.page_title }}</h1>
+      <p class="lead">{{ property_lead }}</p>
+
+      <div class="duo">
+        <div class="map">
+          {% if property.map_image %}
+          <img src="{{ property.map_image }}" alt="Aerial view of {{ address_line1 }}" />
+          {% else %}
+          <div>
+            <div class="map-pin"></div>
+            <div class="map-note">Satellite view of the property<br />will appear here</div>
+          </div>
+          {% endif %}
+          <div class="map-coords">{{ "%.4f"|format(property.latitude) }}, {{ "%.4f"|format(property.longitude) }} · {{ property.census_tract }}</div>
+        </div>
+
+        <div class="zone">
+          <div class="zone-label">FEMA flood zone</div>
+          <div class="zone-row">
+            <div class="zone-code">{{ flood_zone.code }}</div>
+            <div class="zone-title {{ flood_zone.level }}">{{ flood_zone.title }}</div>
+          </div>
+          <div class="zone-text">{{ flood_zone.text }}</div>
+        </div>
+      </div>
+
+      <div class="section-label">Flood insurance claims nearby</div>
+      <div class="chart">
+        <div class="chart-head">
+          <div class="chart-title">{{ claims.total }} claims in {{ claims.years_with_claims }} of {{ claims.bars|length }} years — they cluster after major storms</div>
+          <div class="chart-sub">Claims per year, {{ flood_claims.area_label }}</div>
+        </div>
+        <svg viewBox="-4 -14 {{ claims.width + 8 }} {{ claims.height + 30 }}" role="img"
+             aria-label="Flood insurance claims per year, {{ claims.first }} to {{ claims.last }}">
+          <line x1="0" x2="{{ claims.width }}" y1="{{ claims.height }}" y2="{{ claims.height }}" stroke="#B9C7D4" stroke-width="1" />
+          {% for b in claims.bars %}
+            {% if b.value > 0 %}
+            <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" rx="1.5"
+                  fill="{{ '#003366' if b.value == claims.peak[0] else '#7BAFD4' }}" />
+            {% endif %}
+            {% if b.show_value %}
+            <text x="{{ b.x + b.w / 2 }}" y="{{ b.y - 4 }}" text-anchor="middle" font-size="10" font-weight="700"
+                  fill="#003366" font-family="Source Sans 3, Arial, sans-serif">{{ b.value }}</text>
+            {% endif %}
+            {% if b.tick or loop.first or loop.last %}
+            <text x="{{ b.x + b.w / 2 }}" y="{{ claims.height + 13 }}" text-anchor="middle" font-size="9.5"
+                  fill="#707070" font-family="Source Sans 3, Arial, sans-serif">{{ b.label }}</text>
+            {% endif %}
+          {% endfor %}
+        </svg>
+        <div class="chart-note">Source: FEMA National Flood Insurance Program (OpenFEMA). Counts only insured homes, so actual flooding may be higher.</div>
+      </div>
+
+      <div class="section-label">Major storms on record in {{ county }}</div>
+      <table class="events">
+        {% for e in events %}
+        <tr>
+          <td class="ev-date">{{ e.date }}</td>
+          <td class="ev-name">{{ e.name }}</td>
+          <td class="ev-tag-cell"><span class="ev-tag">{{ e.hazards|join(" · ") }}</span></td>
+          <td class="ev-text">{{ e.summary }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+
+      <div class="section-label">{{ audience_info.checklist_title }}</div>
+      <div class="checks">
+        {% for c in audience_info.checklist %}
+        <div class="check"><i></i><div><strong>{{ c.bold }}</strong> {{ c.text }}</div></div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>© Emergency Insights · Report {{ report_id }}</span>
+      <span class="page-num">3</span>
+      <span>{{ report_date }}</span>
+    </div>
+  </div>
+</body>
+</html>

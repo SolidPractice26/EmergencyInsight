@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hazard Summary — {{ address_line1 }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ===== PAGE 2 — HAZARD SUMMARY =====
+       Filled by render.py. Headline word = national rank tier;
+       small number = the same rank on 0–10. History only. */
+
+    @page { size: A4; margin: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:  #003366;
+      --navy2: #002244;
+      --steel: #7BAFD4;
+      --gray:  #707070;
+      --lgray: #9A9A9A;
+      --rule:  #D8E4EE;
+      --track: #E6ECF2;
+      --white: #FFFFFF;
+      --t-very_high: #B03A2E;
+      --t-high:      #DB6B3C;
+      --t-moderate:  #D9A02B;
+      --t-low:       #7BAFD4;
+      --t-very_low:  #A9C8E0;
+      --t-none:      #C5CDD5;
+      --sans:  'Source Sans 3', 'Segoe UI', Arial, sans-serif;
+      --serif: 'Playfair Display', Georgia, serif;
+    }
+
+    html, body { background: #d4d4d4; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    .page {
+      width: 210mm; height: 297mm; margin: 0 auto;
+      position: relative; display: flex; flex-direction: column;
+      overflow: hidden; background: var(--white);
+      box-shadow: 0 6px 40px rgba(0,0,0,0.22);
+      font-family: var(--sans); color: var(--navy);
+    }
+    .accent-stripe { position: absolute; left: 0; top: 0; bottom: 0; width: 5mm; background: var(--steel); z-index: 10; }
+
+    .watermark {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%) rotate(-38deg);
+      font-size: 22mm; font-weight: 700; color: rgba(0,0,0,0.04);
+      letter-spacing: 0.08em; white-space: nowrap; pointer-events: none; z-index: 100;
+    }
+    .watermark:empty { display: none; }
+
+    /* ── Running header (same on every inside page) ── */
+    .header {
+      flex: 0 0 16mm; background: var(--navy);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16mm 0 18mm;
+    }
+    .header img { height: 8.5mm; width: auto; }
+    .header-right { text-align: right; }
+    .header-title { font-size: 2.5mm; font-weight: 600; color: var(--steel); text-transform: uppercase; letter-spacing: 0.15em; }
+    .header-address { font-size: 2.8mm; color: rgba(255,255,255,0.75); margin-top: 0.6mm; }
+
+    .body { flex: 1; padding: 9mm 16mm 0 18mm; display: flex; flex-direction: column; }
+
+    .eyebrow { font-size: 2.5mm; font-weight: 600; color: var(--steel); text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 1.5mm; }
+    h1 { font-family: var(--serif); font-size: 10mm; font-weight: 800; letter-spacing: -0.01em; line-height: 1.05; }
+    .headline { font-size: 4.6mm; font-weight: 600; color: var(--navy); line-height: 1.35; margin-top: 4mm; max-width: 165mm; }
+
+    /* Band count strip */
+    .counts { display: flex; gap: 3mm; margin-top: 5mm; }
+    .count {
+      flex: 1; display: flex; align-items: center; gap: 3mm;
+      padding: 2.5mm 3.5mm; border-radius: 1.5mm; background: #F4F7FA;
+    }
+    .count-num { font-family: var(--serif); font-size: 7mm; font-weight: 700; line-height: 1; }
+    .count-label { font-size: 2.6mm; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+    .count-meaning { font-size: 2.6mm; color: var(--gray); }
+    .count.above .count-num, .count.above .count-label { color: var(--t-very_high); }
+    .count.average .count-num, .count.average .count-label { color: #B7841C; }
+    .count.below .count-num, .count.below .count-label { color: var(--navy); }
+
+    /* Top hazards */
+    .section-label {
+      font-size: 2.6mm; font-weight: 700; color: var(--navy); text-transform: uppercase;
+      letter-spacing: 0.12em; margin: 8mm 0 3.5mm; padding-bottom: 1.5mm; border-bottom: 0.5pt solid var(--rule);
+    }
+    .top { display: flex; gap: 3mm; }
+    .top-card {
+      flex: 1; border-radius: 1.5mm; padding: 3.5mm 4mm;
+      background: var(--navy); color: var(--white);
+      display: flex; flex-direction: column;
+    }
+    .top-card-name { font-size: 3mm; font-weight: 700; color: var(--steel); text-transform: uppercase; letter-spacing: 0.1em; }
+    .top-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 2mm; margin-top: 1.2mm; }
+    .top-card-tier { font-family: var(--serif); font-size: 7mm; font-weight: 700; line-height: 1; }
+    .top-card-score { font-family: var(--sans); font-size: 3.2mm; font-weight: 700; color: rgba(255,255,255,0.75); white-space: nowrap; }
+    .top-card-rank { font-size: 2.8mm; color: rgba(255,255,255,0.7); margin-top: 1.2mm; }
+    .top-card-facts { margin-top: 2.5mm; padding-top: 2mm; border-top: 0.5pt solid rgba(255,255,255,0.18); font-size: 2.9mm; line-height: 1.5; }
+    .top-card-facts strong { font-weight: 600; color: var(--white); }
+    .top-card-facts span { color: rgba(255,255,255,0.7); }
+    .top-card-line { font-size: 2.9mm; line-height: 1.4; color: rgba(255,255,255,0.85); margin-top: 2mm; }
+
+    /* All 18 gauges */
+    .grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3.5mm; }
+    .gauge {
+      border: 0.5pt solid var(--rule); border-radius: 1.5mm;
+      padding: 2.5mm 1.5mm 2.5mm; text-align: center;
+      border-top: 0.8mm solid var(--band);
+    }
+    .gauge.very_high { --band: var(--t-very_high); background: #FCF1EF; }
+    .gauge.high      { --band: var(--t-high);      background: #FDF5F1; }
+    .gauge.moderate  { --band: var(--t-moderate);  background: #FDF9F0; }
+    .gauge.low       { --band: var(--t-low); }
+    .gauge.very_low  { --band: var(--t-very_low); }
+    .gauge.none      { --band: var(--t-none); }
+    .gauge-tier { font-size: 2.7mm; font-weight: 700; color: var(--navy); margin-top: 0.8mm; }
+    .gauge.none .gauge-tier { color: var(--lgray); font-weight: 600; }
+    .gauge-years { font-size: 2.3mm; color: var(--gray); margin-top: 0.3mm; }
+    .gauge-name { font-size: 2.5mm; font-weight: 600; color: var(--navy); line-height: 1.2; min-height: 6mm; display: flex; align-items: center; justify-content: center; }
+    .gauge svg { width: 100%; height: auto; display: block; margin-top: 0.5mm; }
+    .gauge-num { font-family: var(--sans); font-size: 15px; font-weight: 700; }
+
+    .none-line { font-size: 2.9mm; color: var(--gray); margin-top: 3mm; line-height: 1.45; }
+    .none-line strong { color: var(--navy); font-weight: 700; }
+
+    /* How to read */
+    .legend {
+      margin-top: auto; margin-bottom: 5mm;
+      display: flex; gap: 5mm; align-items: flex-start;
+      padding: 3.5mm 4mm; background: #F4F7FA; border-radius: 1.5mm;
+    }
+    .legend-title { font-size: 2.6mm; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; white-space: nowrap; padding-top: 0.3mm; }
+    .legend-text { font-size: 2.9mm; color: #3D4A57; line-height: 1.5; }
+    .legend-scale { display: flex; flex-wrap: wrap; gap: 1.5mm 4mm; margin-top: 1.5mm; }
+    .legend-scale span { display: inline-flex; align-items: center; gap: 1.3mm; font-size: 2.7mm; font-weight: 600; }
+    .legend-scale em { font-style: normal; font-weight: 400; color: var(--gray); }
+    .legend-scale i { width: 3mm; height: 3mm; border-radius: 0.6mm; display: inline-block; }
+
+    /* ── Running footer ── */
+    .footer {
+      flex: 0 0 11mm; margin: 0 16mm 0 18mm;
+      border-top: 0.5pt solid var(--steel);
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 2.5mm; color: var(--lgray);
+    }
+    .footer .page-num { font-weight: 700; color: var(--navy); font-size: 3mm; }
+
+    @media print { html, body { background: white; } .page { box-shadow: none; margin: 0; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="watermark">{{ watermark }}</div>
+    <div class="accent-stripe"></div>
+
+    <div class="header">
+      <img src="{{ assets_path }}/EI-Logo.png" alt="Emergency Insights" />
+      <div class="header-right">
+        <div class="header-title">{{ report_title }}</div>
+        <div class="header-address">{{ address_line1 }}, {{ city }}, {{ state }} {{ zip }}</div>
+      </div>
+    </div>
+
+    <div class="body">
+      <div class="eyebrow">Section 1 · At a glance</div>
+      <h1>Hazard Summary</h1>
+      <p class="headline">{{ headline }}</p>
+
+      <div class="counts">
+        {% for g in groups %}
+        <div class="count {{ g.key }}">
+          <div class="count-num">{{ group_counts[g.key] }}</div>
+          <div>
+            <div class="count-label">{{ g.label }}</div>
+            <div class="count-meaning">{{ g.meaning }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="section-label">Hazards to plan for</div>
+      <div class="top">
+        {% for h in top_hazards %}
+        <div class="top-card">
+          <div class="top-card-name">{{ h.name }}</div>
+          <div class="top-card-head">
+            <div class="top-card-tier">{{ h.tier.label }}</div>
+            <div class="top-card-score">{{ h.score }} / 10</div>
+          </div>
+          <div class="top-card-rank">{{ h.rank_line }}</div>
+          <div class="top-card-facts">
+            <strong>{{ h.history_line }}</strong><br />
+            <span>{{ h.severity_line }}</span>
+          </div>
+          <div class="top-card-line">{{ h.plan_line }}</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="section-label">{{ recorded|length }} recorded hazards, ranked against the U.S.</div>
+      <div class="grid">
+        {% for h in recorded %}
+        <div class="gauge {{ h.tier.key }}">
+          <div class="gauge-name">{{ h.name }}</div>
+          <svg viewBox="0 0 100 62" aria-label="{{ h.name }}: {{ h.tier.label }}, {{ h.score }} out of 10">
+            <path d="M12 52 A38 38 0 0 1 88 52" fill="none" stroke="var(--track)" stroke-width="9" stroke-linecap="round" />
+            {% if h.score > 0 %}
+            <path d="M12 52 A38 38 0 0 1 88 52" fill="none" stroke="var(--band)" stroke-width="9" stroke-linecap="round"
+                  pathLength="100" stroke-dasharray="{{ h.score * 10 }} 100" />
+            {% endif %}
+            <text x="50" y="54" text-anchor="middle" class="gauge-num"
+                  fill="{{ 'var(--lgray)' if h.score == 0 else 'var(--navy)' }}">{{ h.score }}</text>
+          </svg>
+          <div class="gauge-tier">{{ h.tier.label }}</div>
+          <div class="gauge-years">{{ h.years_with_event }} of {{ h.window_years }} yrs</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% if not_recorded %}
+      <p class="none-line"><strong>Not recorded here</strong> in the record window ({{ not_recorded|length }} hazards):
+        {{ join_names(not_recorded|map(attribute='name')|list) }}.</p>
+      {% endif %}
+
+      <div class="legend">
+        <div class="legend-title">How to read</div>
+        <div>
+          <div class="legend-text">
+            The <strong>word</strong> ranks {{ county }} against every U.S. county for that hazard, by recorded
+            damaging events per square mile. The <strong>number</strong> is the same rank out of 10: a 9 means more
+            events than 90% of counties. Rare hazards use 30 years of records, common ones 10. History, not a forecast.
+          </div>
+          <div class="legend-scale">
+            {% for t in tiers %}
+            <span><i style="background: var(--t-{{ t.key }})"></i>{{ t.label }} <em>{{ t.scores }}</em></span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span>© Emergency Insights · Report {{ report_id }}</span>
+      <span class="page-num">2</span>
+      <span>{{ report_date }}</span>
+    </div>
+  </div>
+</body>
+</html>
