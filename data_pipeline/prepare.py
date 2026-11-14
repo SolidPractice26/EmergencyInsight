@@ -11,6 +11,7 @@ Inputs (downloaded files):
 Outputs:
   county_ratings.csv   one row per county per hazard (whole U.S.)
   florida_db.json      the Florida slice, in the shape the report needs
+  states/XX.json       the same, one file per state (used by the website)
 
 Run:  python prepare.py <noaa_parquet> <ibtracs_csv> <gazetteer_txt> <out_dir>
 """
@@ -112,6 +113,15 @@ def load_counties(path):
     g = pd.read_csv(path, sep="\t", dtype={"GEOID": str})
     g.columns = [c.strip() for c in g.columns]
     g = g[~g.USPS.isin(["PR"])]
+    # RULE 2d: Connecticut replaced its 8 counties with 9 planning regions in 2022, but NOAA and the
+    # Census ZIP table still use the old counties, so Connecticut uses the 2020 county list.
+    old = Path(path).with_name("2020_Gaz_counties_national.txt")
+    if old.exists():
+        o = pd.read_csv(old, sep="\t", dtype={"GEOID": str})
+        o.columns = [c.strip() for c in o.columns]
+        g = pd.concat([g[g.USPS != "CT"], o[o.USPS == "CT"]], ignore_index=True)
+    else:
+        print("Warning: 2020_Gaz_counties_national.txt not found next to the county list; Connecticut will have no records.")
     g["state_fips"] = g.GEOID.str[:2]
     g["key"] = g.NAME.map(key)
     return g[["GEOID", "USPS", "NAME", "ALAND_SQMI", "INTPTLAT", "INTPTLONG", "state_fips", "key"]].reset_index(drop=True)
@@ -271,6 +281,30 @@ def main(noaa_path, ib_path, gaz_path, out_dir):
             "storms": [{"name": s.storm, "year": int(s.year), "month": int(s.month), "damage": float(s.damage)} for s in storms.itertuples()],
         }
     (out_dir / "florida_db.json").write_text(json.dumps(db, separators=(",", ":")), encoding="utf-8")
+
+    # --- One file per state, same shape, for the website's state + ZIP search ---
+    # earthquake and volcanic activity are not in NOAA's records; the report marks them "not yet included"
+    states_dir = out_dir / "states"
+    states_dir.mkdir(exist_ok=True)
+    rt = ratings.set_index(["GEOID", "hazard"])
+    ev_by = {k: g for k, g in events.groupby("GEOID")}
+    hur_by = {k: g for k, g in hur_events.groupby("GEOID")}
+    for st, grp in counties.groupby("USPS"):
+        sdb = {"first_year": START_YEAR, "last_year": LAST_YEAR, "state": st, "counties": {}}
+        for _, c in grp.iterrows():
+            ce = ev_by.get(c.GEOID, events.iloc[0:0])
+            h = {}
+            for hz in HAZARDS:
+                r = rt.loc[(c.GEOID, hz)]
+                e = ce[ce.hazard == hz]
+                by_year = {str(y): int((e.year == y).sum()) for y in range(START_YEAR, LAST_YEAR + 1)}
+                by_month = [int((e.month == m).sum()) for m in range(1, 13)]
+                h[hz] = [int(r.national_percentile), int(r.years_with_event), r.severity, by_year, by_month]
+            hs = hur_by.get(c.GEOID)
+            storms = [] if hs is None else [{"name": x.storm, "year": int(x.year), "month": int(x.month), "damage": float(x.damage)}
+                       for x in hs.sort_values("damage", ascending=False).head(6).sort_values(["year", "month"], ascending=False).itertuples()]
+            sdb["counties"][c.GEOID] = {"name": c.NAME, "lat": round(float(c.INTPTLAT), 4), "lon": round(float(c.INTPTLONG), 4), "h": h, "storms": storms}
+        (states_dir / f"{st}.json").write_text(json.dumps(sdb, separators=(",", ":")), encoding="utf-8")
 
     print(f"Counties: {len(counties)}   NOAA records used: {len(ev):,}   zone records without a county match: {unmatched:.1%}")
     print(f"Storm passes found: {len(passes):,}   hurricane events (damaging): {len(hur_events):,}")

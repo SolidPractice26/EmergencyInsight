@@ -40,7 +40,7 @@ After that, each report is a quick lookup plus filling in a fixed template, with
 | Folder | What it is |
 |---|---|
 | `data_pipeline/` | `fetch_data.py` downloads the raw records. `prepare.py` turns them into ratings. All the rules (which NOAA event counts as which hazard, how hurricanes are matched, and so on) are written at the top of `prepare.py` in plain language. |
-| `data/processed/` | The output: ratings for all 3,144 U.S. counties (`county_ratings.csv`), the Florida slice the website uses (`florida_db.json`), 10 test addresses with their real flood zones (`fl_addresses.json`), and a Florida ZIP code → county table (`fl_zips.json`, from the Census ZIP-county relationship file; a ZIP that spans counties uses the one with the most land). |
+| `data/processed/` | The output: ratings for every U.S. county (`county_ratings.csv`), the Florida slice (`florida_db.json`) and 10 Florida test addresses with flood zones (`fl_addresses.json`). The website's per-state files (`states/XX.json`, county data; `zips/XX.json`, ZIP code → county, from the Census ZIP-county table) are written here and copied to `deploy/ei/data/` (not stored twice in the repository). |
 | `report_generator/` | *(Out of date: still uses the old 0–10 scores. The browser version in `deploy/ei/lab.js` is current.)*  `render.py` fills the HTML templates in `templates/` with a report data file and prints them to PDF. `data/hazards.json` holds the hazard wording, and `data/audiences.json` holds the buyer, renter and resident checklists. |
 | `deploy/ei/` | **The website** (the one source for it), published at `javierarocha.me/ei`. `index.html` is the page, `site.js` runs the site, `lab.js` builds reports and PDFs in the browser from `data/florida_db.json`. The Test lab is at `#lab` (not in the menu). The earlier claude.ai artifact copy is frozen and no longer updated. |
 | `docs/` | A sample report. |
@@ -54,7 +54,8 @@ Requires Python 3.10+.
 pip install -r data_pipeline/requirements.txt
 python data_pipeline/fetch_data.py raw
 python data_pipeline/prepare.py raw/noaa_all.parquet raw/ibtracs_NA.csv raw/2024_Gaz_counties_national.txt data/processed
-cp data/processed/florida_db.json deploy/ei/data/
+python data_pipeline/build_zips.py raw/zcta_county.txt raw/2024_Gaz_counties_national.txt data/processed
+cp -r data/processed/states data/processed/zips deploy/ei/data/
 
 # 2. Build the sample report
 pip install -r report_generator/requirements.txt
@@ -77,6 +78,8 @@ Raw downloads (`raw/`) are not stored in the repository. They can always be down
 
 - **Tornadoes:** counts favor places with more spotters. Weighting by EF scale would help.
 - **Rare hazards:** one or two events can rank a county high; the 3-year rule keeps these out of the headline, but the comparison still shows them.
+- **Connecticut:** NOAA and the Census ZIP table still use the 8 old counties, so Connecticut uses the 2020 county list.
+- **Alaska:** about half the boroughs have no matched records (zone names don't match borough names).
 - **Zone records:** about 17.5% of NOAA "zone" records are not yet matched to a county nationally. The NWS zone–county file fixes this.
 - **Severity:** the flag is rough (median damage per event).
 - **Not yet included:** FEMA flood insurance claims and USGS earthquakes.

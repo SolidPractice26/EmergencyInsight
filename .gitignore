@@ -3,3 +3,5 @@ report_generator/output/
 __pycache__/
 *.pyc
 .DS_Store
+data/processed/states/
+data/processed/zips/

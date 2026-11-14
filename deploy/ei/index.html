@@ -95,6 +95,8 @@ img { max-width: 100%; height: auto; display: block; }
 .search { display: flex; flex-wrap: wrap; gap: 10px; max-width: 600px; }
 .search input { flex: 1 1 260px; min-width: 0; height: 54px; border: 0; border-radius: 10px; padding: 0 16px; font: inherit; font-size: 17px; color: var(--ink); background: var(--white); }
 .search.on-light input { box-shadow: inset 0 0 0 1.5px #c3d3e1; }
+.search .home-state { flex: 1 1 180px; min-width: 0; height: 54px; border: 0; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 17px; color: var(--ink); background: var(--white); }
+.search #addr-home { flex: 0 1 160px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* Generic grids */
@@ -144,11 +146,12 @@ td:first-child { color: var(--ink); font-weight: 600; }
 .preview .item b { font-size: 18px; }
 [hidden] { display: none !important; }
 .addr-grid { border: 0; padding: 0; margin: 0; display: grid; grid-template-columns: 2fr 1.2fr 1fr 0.8fr; gap: 12px; }
+.place-grid { grid-template-columns: 1.2fr 0.8fr 1.6fr; }
 .addr-grid .f { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .addr-grid label { font-size: 14px; font-weight: 600; color: var(--navy); }
 .addr-grid input, .addr-grid select { height: 50px; width: 100%; border: 1.5px solid #c3d3e1; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 16px; color: var(--ink); background: var(--white); }
 .addr-grid input:focus, .addr-grid select:focus { outline: 3px solid rgba(0,51,102,0.25); border-color: var(--navy); }
-@media (max-width: 720px) { .addr-grid { grid-template-columns: 1fr 1fr; } .addr-grid .street { grid-column: 1 / -1; } }
+@media (max-width: 720px) { .addr-grid { grid-template-columns: 1fr 1fr; } .addr-grid .street { grid-column: 1 / -1; } .place-grid .f:last-child { grid-column: 1 / -1; } }
 .proto-bar { background: #fff6e5; color: #5a4210; font-size: 14px; padding: 8px 0; border-bottom: 1px solid #f0dfbd; }
 .notice { background: #fff6e5; color: #5a4210; border-radius: 10px; padding: 14px 16px; font-size: 15px; }
 
@@ -470,7 +473,7 @@ td:first-child { color: var(--ink); font-weight: 600; }
     </nav>
   </div>
 </header>
-<div class="proto-bar"><div class="wrap"><b>Prototype.</b> Florida only. Reports use real NOAA storm records (2016–2025); flood zones are shown for test addresses only.</div></div>
+<div class="proto-bar"><div class="wrap"><b>Prototype.</b> Reports for every U.S. county by ZIP code, from real NOAA storm records (2016–2025). Earthquake data and property flood zones are coming next.</div></div>
 
 <main>
 
@@ -483,8 +486,10 @@ td:first-child { color: var(--ink); font-weight: 600; }
         <h1 class="h1">Know what your home has been through.</h1>
         <p class="lead">A plain-English report of every natural hazard recorded where you live: hurricanes, floods, wind and 15 more, each compared with the rest of the country.</p>
         <form class="search js-search">
-          <label class="sr" for="addr-home">ZIP code or full address</label>
-          <input id="addr-home" type="text" placeholder="ZIP code or full address" autocomplete="street-address">
+          <label class="sr" for="home-state">State</label>
+          <select id="home-state" class="home-state" autocomplete="address-level1"><option value="">Choose a state</option><option value="AL">Alabama</option><option value="AK">Alaska</option><option value="AZ">Arizona</option><option value="AR">Arkansas</option><option value="CA">California</option><option value="CO">Colorado</option><option value="CT">Connecticut</option><option value="DE">Delaware</option><option value="DC">District of Columbia</option><option value="FL">Florida</option><option value="GA">Georgia</option><option value="HI">Hawaii</option><option value="ID">Idaho</option><option value="IL">Illinois</option><option value="IN">Indiana</option><option value="IA">Iowa</option><option value="KS">Kansas</option><option value="KY">Kentucky</option><option value="LA">Louisiana</option><option value="ME">Maine</option><option value="MD">Maryland</option><option value="MA">Massachusetts</option><option value="MI">Michigan</option><option value="MN">Minnesota</option><option value="MS">Mississippi</option><option value="MO">Missouri</option><option value="MT">Montana</option><option value="NE">Nebraska</option><option value="NV">Nevada</option><option value="NH">New Hampshire</option><option value="NJ">New Jersey</option><option value="NM">New Mexico</option><option value="NY">New York</option><option value="NC">North Carolina</option><option value="ND">North Dakota</option><option value="OH">Ohio</option><option value="OK">Oklahoma</option><option value="OR">Oregon</option><option value="PA">Pennsylvania</option><option value="RI">Rhode Island</option><option value="SC">South Carolina</option><option value="SD">South Dakota</option><option value="TN">Tennessee</option><option value="TX">Texas</option><option value="UT">Utah</option><option value="VT">Vermont</option><option value="VA">Virginia</option><option value="WA">Washington</option><option value="WV">West Virginia</option><option value="WI">Wisconsin</option><option value="WY">Wyoming</option></select>
+          <label class="sr" for="addr-home">ZIP code</label>
+          <input id="addr-home" type="text" inputmode="numeric" maxlength="5" placeholder="ZIP code" autocomplete="postal-code">
           <button class="btn btn-steel" type="submit">See the report</button>
         </form>
         <p class="small">History, not a forecast. Built on public NOAA, FEMA and U.S. Census records.</p>
@@ -517,7 +522,7 @@ td:first-child { color: var(--ink); font-weight: 600; }
         <div><b>1.78M</b><span>storm records reviewed</span></div>
         <div><b>3,144</b><span>U.S. counties compared</span></div>
         <div><b>18</b><span>natural hazards in every report</span></div>
-        <div><b>67</b><span>Florida counties available now</span></div>
+        <div><b>50</b><span>states and D.C., every county</span></div>
       </div>
     </div>
   </div>
@@ -598,8 +603,8 @@ td:first-child { color: var(--ink); font-weight: 600; }
   <div class="band pad-sm mist">
     <div class="wrap split" style="align-items: center;">
       <div class="stack">
-        <h2 class="h2">Check a Florida home now.</h2>
-        <p class="lead">Free while we test the prototype. Other states are coming; join the waitlist to hear when yours is ready.</p>
+        <h2 class="h2">Check a home now.</h2>
+        <p class="lead">Free while we test the prototype. Join the waitlist to hear when full address reports, with the property's flood zone, are ready.</p>
       </div>
       <div class="row"><a class="btn btn-primary" href="#report">Get a report</a><a class="btn btn-outline js-waitlist" href="#contact">Join the waitlist</a></div>
     </div>
@@ -619,17 +624,16 @@ td:first-child { color: var(--ink); font-weight: 600; }
       <div id="flow-address" class="stack-lg">
         <div class="stack">
           <h1 class="h2">Which home do you want to check?</h1>
-          <p class="lead">Enter the address, then tell us whether you're buying, renting, or already living there. The report changes to fit.</p>
+          <p class="lead">Choose the state and enter the ZIP code, then tell us whether you're buying, renting, or already living there. The report changes to fit.</p>
         </div>
         <form class="stack js-search" style="max-width: 640px;">
-          <fieldset class="addr-grid">
-            <legend class="h3" style="font-size: 17px; margin-bottom: 8px;">Property address</legend>
-            <div class="f street"><label for="addr-street">Street address</label><input id="addr-street" type="text" placeholder="400 S Orange Ave" autocomplete="address-line1"></div>
-            <div class="f city"><label for="addr-city">City</label><input id="addr-city" type="text" placeholder="Orlando" autocomplete="address-level2"></div>
-            <div class="f state"><label for="addr-state">State</label><select id="addr-state" autocomplete="address-level1"><option value="FL" selected>Florida</option><optgroup label="Coming soon"><option disabled>Alabama</option><option disabled>Alaska</option><option disabled>Arizona</option><option disabled>Arkansas</option><option disabled>California</option><option disabled>Colorado</option><option disabled>Connecticut</option><option disabled>Delaware</option><option disabled>District of Columbia</option><option disabled>Georgia</option><option disabled>Hawaii</option><option disabled>Idaho</option><option disabled>Illinois</option><option disabled>Indiana</option><option disabled>Iowa</option><option disabled>Kansas</option><option disabled>Kentucky</option><option disabled>Louisiana</option><option disabled>Maine</option><option disabled>Maryland</option><option disabled>Massachusetts</option><option disabled>Michigan</option><option disabled>Minnesota</option><option disabled>Mississippi</option><option disabled>Missouri</option><option disabled>Montana</option><option disabled>Nebraska</option><option disabled>Nevada</option><option disabled>New Hampshire</option><option disabled>New Jersey</option><option disabled>New Mexico</option><option disabled>New York</option><option disabled>North Carolina</option><option disabled>North Dakota</option><option disabled>Ohio</option><option disabled>Oklahoma</option><option disabled>Oregon</option><option disabled>Pennsylvania</option><option disabled>Rhode Island</option><option disabled>South Carolina</option><option disabled>South Dakota</option><option disabled>Tennessee</option><option disabled>Texas</option><option disabled>Utah</option><option disabled>Vermont</option><option disabled>Virginia</option><option disabled>Washington</option><option disabled>West Virginia</option><option disabled>Wisconsin</option><option disabled>Wyoming</option></optgroup></select></div>
-            <div class="f zip"><label for="addr-zip">ZIP code</label><input id="addr-zip" type="text" inputmode="numeric" maxlength="5" placeholder="32801" autocomplete="postal-code"></div>
+          <fieldset class="addr-grid place-grid">
+            <legend class="h3" style="font-size: 17px; margin-bottom: 8px;">Where is the home?</legend>
+            <div class="f"><label for="addr-state">State</label><select id="addr-state" autocomplete="address-level1"><option value="">Choose a state</option><option value="AL">Alabama</option><option value="AK">Alaska</option><option value="AZ">Arizona</option><option value="AR">Arkansas</option><option value="CA">California</option><option value="CO">Colorado</option><option value="CT">Connecticut</option><option value="DE">Delaware</option><option value="DC">District of Columbia</option><option value="FL">Florida</option><option value="GA">Georgia</option><option value="HI">Hawaii</option><option value="ID">Idaho</option><option value="IL">Illinois</option><option value="IN">Indiana</option><option value="IA">Iowa</option><option value="KS">Kansas</option><option value="KY">Kentucky</option><option value="LA">Louisiana</option><option value="ME">Maine</option><option value="MD">Maryland</option><option value="MA">Massachusetts</option><option value="MI">Michigan</option><option value="MN">Minnesota</option><option value="MS">Mississippi</option><option value="MO">Missouri</option><option value="MT">Montana</option><option value="NE">Nebraska</option><option value="NV">Nevada</option><option value="NH">New Hampshire</option><option value="NJ">New Jersey</option><option value="NM">New Mexico</option><option value="NY">New York</option><option value="NC">North Carolina</option><option value="ND">North Dakota</option><option value="OH">Ohio</option><option value="OK">Oklahoma</option><option value="OR">Oregon</option><option value="PA">Pennsylvania</option><option value="RI">Rhode Island</option><option value="SC">South Carolina</option><option value="SD">South Dakota</option><option value="TN">Tennessee</option><option value="TX">Texas</option><option value="UT">Utah</option><option value="VT">Vermont</option><option value="VA">Virginia</option><option value="WA">Washington</option><option value="WV">West Virginia</option><option value="WI">Wisconsin</option><option value="WY">Wyoming</option></select></div>
+            <div class="f"><label for="addr-zip">ZIP code</label><input id="addr-zip" type="text" inputmode="numeric" maxlength="5" placeholder="32801" autocomplete="postal-code"></div>
+            <div class="f"><label for="addr-county">Or choose a county</label><select id="addr-county" disabled><option value="">Choose a state first</option></select></div>
           </fieldset>
-          <p class="small">Florida only for now. The ZIP code is required; street and city let us match our test addresses, which also get their FEMA flood zone.</p>
+          <p class="small">Every U.S. county is available. We find the county from the ZIP code; a ZIP code that crosses county lines uses the county where most of it lies.</p>
           <p class="small" id="flow-err" aria-live="polite" style="color: #9b2c20;"></p>
           <fieldset style="border: 0; padding: 0; margin: 8px 0 0;">
             <legend class="h3" style="font-size: 17px; margin-bottom: 8px;">This report is for someone who is…</legend>
@@ -646,7 +650,7 @@ td:first-child { color: var(--ink); font-weight: 600; }
       <div id="flow-preview" class="stack-lg" hidden>
         <div class="row" style="justify-content: space-between;">
           <h1 class="h2">Is this the right home?</h1>
-          <a href="#report" class="js-restart" style="font-weight: 600;">Change address</a>
+          <a href="#report" class="js-restart" style="font-weight: 600;">Change area</a>
         </div>
         <p class="notice" id="flow-notice">You searched for <b id="searched">your address</b>.</p>
         <div class="split" style="align-items: stretch;">
@@ -816,8 +820,8 @@ td:first-child { color: var(--ink); font-weight: 600; }
         <details><summary>Where does the data come from?</summary><p>Public U.S. government records: NOAA's Storm Events Database, FEMA flood insurance claims and flood maps, FEMA's National Risk Index and the USGS earthquake catalog. Every report lists its sources.</p></details>
         <details><summary>I already live in my home. Is this useful for me?</summary><p>Yes. The report works the same for owners and renters who have lived somewhere for years. Many people only learn their area's history after a storm.</p></details>
         <details><summary>Does it replace an inspection or an insurance quote?</summary><p>No. It adds what an inspection can't see, the area's history, and helps you know which questions to ask your inspector, landlord or insurance agent.</p></details>
-        <details><summary>How local is the information?</summary><p>The flood zone is for the property itself and flood claims are for its census tract. Most weather records are kept by county, so those ratings describe the wider area.</p></details>
-        <details><summary>Which areas do you cover?</summary><p>[YOUR COVERAGE — for example, starting with Orange County, Florida.]</p></details>
+        <details><summary>How local is the information?</summary><p>Weather records are kept by county, so reports describe the county the ZIP code is in. Full address reports, coming next, add the property's own FEMA flood zone and flood claims for its census tract.</p></details>
+        <details><summary>Which areas do you cover?</summary><p>Every county in the 50 states and D.C. You choose the state and enter a ZIP code, or pick the county directly.</p></details>
       </div>
     </div>
   </div>

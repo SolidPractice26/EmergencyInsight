@@ -5,6 +5,8 @@ Downloads (into <raw_dir>):
   NOAA Storm Events "details" files, one per year      -> noaa_raw/*.csv.gz
   NOAA IBTrACS hurricane tracks, North Atlantic          -> ibtracs_NA.csv
   Census Gazetteer county list (land area, center point) -> 2024_Gaz_counties_national.txt
+  2020 county list (Connecticut's old counties)          -> 2020_Gaz_counties_national.txt
+  Census ZIP code to county table                        -> zcta_county.txt
 Then combines the yearly NOAA files into one table      -> noaa_all.parquet
 
 Run:  python fetch_data.py <raw_dir> [first_year] [last_year]
@@ -26,6 +28,8 @@ NOAA_DIR = "https://www.ncei.noaa.gov/pub/data/swdi/stormevents/csvfiles/"
 IBTRACS = ("https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/"
            "v04r01/access/csv/ibtracs.NA.list.v04r01.csv")
 GAZETTEER = "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2024_Gazetteer/2024_Gaz_counties_national.zip"
+GAZETTEER_2020 = "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2020_Gazetteer/2020_Gaz_counties_national.zip"
+ZCTA_COUNTY = "https://www2.census.gov/geo/docs/maps-data/data/rel2020/zcta520/tab20_zcta520_county20_natl.txt"
 
 # Only the columns prepare.py uses, kept as text so nothing is silently converted.
 NOAA_COLUMNS = ["BEGIN_YEARMONTH", "BEGIN_DAY", "EPISODE_ID", "EVENT_ID", "STATE", "STATE_FIPS", "YEAR",
@@ -75,6 +79,16 @@ def main(raw_dir, first_year=1996, last_year=2025):
         with zipfile.ZipFile(io.BytesIO(get(GAZETTEER))) as z:
             txt = [n for n in z.namelist() if n.endswith(".txt")][0]
             path.write_bytes(z.read(txt))
+
+    # 3b. 2020 county list (Connecticut's old counties) and the ZIP-to-county table
+    path = raw / "2020_Gaz_counties_national.txt"
+    if not path.exists():
+        with zipfile.ZipFile(io.BytesIO(get(GAZETTEER_2020))) as z:
+            txt = [n for n in z.namelist() if n.endswith(".txt")][0]
+            path.write_bytes(z.read(txt))
+    path = raw / "zcta_county.txt"
+    if not path.exists():
+        path.write_bytes(get(ZCTA_COUNTY))
 
     print("Done. Next:  python prepare.py", raw / "noaa_all.parquet", raw / "ibtracs_NA.csv",
           raw / "2024_Gaz_counties_national.txt", "<out_dir>")

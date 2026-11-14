@@ -27,25 +27,30 @@
     renting: 'Includes a <b>Know Before You Sign the Lease</b> page with questions for your landlord.',
     living: 'Includes a <b>What Your Home Has Been Through</b> page with things worth checking.'
   };
-  let pendingAddress = '';
-  const fStreet = document.getElementById('addr-street'), fCity = document.getElementById('addr-city'),
-        fState = document.getElementById('addr-state'), fZip = document.getElementById('addr-zip');
-  // Put a one-line address (from the home page box) into the separate fields
-  function fillFields(text) {
-    const t = (text || '').trim(), zips = t.match(/\b\d{5}\b/g);
-    fZip.value = zips ? zips[zips.length - 1] : '';
-    const parts = t.replace(/\b\d{5}\b/g, '').split(',').map(x => x.trim()).filter(Boolean)
-      .filter(x => !/^(fl|florida)$/i.test(x));
-    fStreet.value = parts[0] && !/^(fl|florida)$/i.test(parts[0]) ? parts[0].replace(/\s+(fl|florida)$/i, '') : '';
-    fCity.value = parts[1] ? parts[1].replace(/\s+(fl|florida)$/i, '') : '';
+  let pending = null;   // a search started on the home page, run when the report page opens
+  const fState = document.getElementById('addr-state'), fZip = document.getElementById('addr-zip'), fCounty = document.getElementById('addr-county');
+
+  // County list follows the chosen state
+  async function fillCounties(selected) {
+    const st = fState.value;
+    fCounty.innerHTML = '<option value="">' + (st ? 'Loading counties…' : 'Choose a state first') + '</option>';
+    fCounty.disabled = true;
+    if (!st || !window.EI_LAB) return;
+    try {
+      const list = await window.EI_LAB.countiesOf(st);
+      if (fState.value !== st) return;
+      fCounty.innerHTML = '<option value="">Use the ZIP code</option>' + list.map(c => `<option value="${c.fips}">${esc2(c.name)}</option>`).join('');
+      fCounty.disabled = false;
+      if (selected) fCounty.value = selected;
+    } catch (e) { fCounty.innerHTML = '<option value="">Counties did not load</option>'; }
   }
-  function fieldsText() {
-    const street = fStreet.value.trim(), city = fCity.value.trim(), zip = fZip.value.trim();
-    return [street, city, `FL ${zip}`].filter(x => x && x !== 'FL ').join(', ');
-  }
+  fState.addEventListener('change', () => { flowErr.textContent = ''; fillCounties(); });
+  fZip.addEventListener('input', () => { flowErr.textContent = ''; if (fZip.value) fCounty.value = ''; });
+  fCounty.addEventListener('change', () => { flowErr.textContent = ''; if (fCounty.value) fZip.value = ''; });
+  const formPlace = () => ({ state: fState.value, zip: fZip.value.trim(), county: fCounty.value });
 
   function resetFlow() {
-    if (pendingAddress) { goPreview(pendingAddress); pendingAddress = ''; return; }
+    if (pending) { const p = pending; pending = null; goPreview(p); return; }
     flowAddress.hidden = false; flowPreview.hidden = true;
     step1.setAttribute('aria-current', 'step'); step2.removeAttribute('aria-current');
   }
@@ -55,34 +60,31 @@
   const esc2 = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const tierTint = { very_high: '#f2a29a', high: '#f5c08a', moderate: '#f2d48a', low: '#a9cbe6', very_low: '#a9cbe6' };
 
-  async function goPreview(addr) {
-    const shown = (addr || '').trim();
+  function showForm(msg) {
+    flowAddress.hidden = false; flowPreview.hidden = true;
+    step1.setAttribute('aria-current', 'step'); step2.removeAttribute('aria-current');
+    flowErr.textContent = msg || '';
+  }
+
+  async function goPreview(place) {
     flowErr.textContent = '';
     const lab = window.EI_LAB;
-    if (!lab) { flowErr.textContent = 'The report tools did not load. Reload the page and try again.'; return; }
-    await lab.ready;
-    const r = /\b\d{5}\b/.test(shown) ? lab.resolveInput(shown)
-      : { error: shown ? 'Add the 5-digit ZIP code. The prototype finds the area by ZIP code.' : 'Enter the ZIP code of the home you want to check.' };
-    if (r.error) {
-      flowAddress.hidden = false; flowPreview.hidden = true;
-      step1.setAttribute('aria-current', 'step'); step2.removeAttribute('aria-current');
-      flowErr.textContent = r.error;
-      return;
-    }
+    if (!lab) { showForm('The report tools did not load. Reload the page and try again.'); return; }
+    const r = await lab.resolvePlace(place);
+    if (r.error) { showForm(r.error); return; }
     const aud = (document.querySelector('input[name="audience"]:checked') || {}).value || 'buying';
     flowReport = lab.makeReport(r.val, aud);
     const { loc, data, pages } = flowReport;
-    const exact = !!loc.flood_zone;
-    document.getElementById('flow-notice').innerHTML = exact
-      ? `You searched for <b>${esc2(shown)}</b>. This is one of our test addresses, so the report includes its real FEMA flood zone.`
-      : `You searched for <b>${esc2(shown)}</b>. The prototype finds the area by ZIP code, so this report covers <b>${esc2(loc.county)}</b>. A report for an exact address will add its FEMA flood zone.`;
-    document.getElementById('flow-place').textContent = exact ? loc.address : `ZIP code ${loc.zip_area}`;
-    document.getElementById('flow-sub').textContent = exact ? `${loc.city}, FL ${loc.zip} · ${loc.county}` : `${loc.county}, Florida`;
+    document.getElementById('flow-notice').innerHTML = loc.zip_area
+      ? `You searched for ZIP code <b>${esc2(loc.zip_area)}</b> in ${esc2(loc.state_name)}. This report covers <b>${esc2(loc.county)}</b>.${loc.zip_note ? esc2(loc.zip_note) : ''}`
+      : `This report covers <b>${esc2(loc.county)}</b>, ${esc2(loc.state_name)}.`;
+    document.getElementById('flow-place').textContent = loc.zip_area ? `ZIP code ${loc.zip_area}` : loc.county;
+    document.getElementById('flow-sub').textContent = `${loc.county}, ${loc.state_name}`;
     const above = data.hazards.filter(h => h.group === 'above');
     document.getElementById('flow-head').textContent = above.length
-      ? `${above.length} hazard${above.length === 1 ? '' : 's'} stand${above.length === 1 ? 's' : ''} out ${exact ? 'at this address' : 'in this area'}`
-      : `No hazard stands out ${exact ? 'at this address' : 'in this area'}`;
-    const list = (above.length ? above : data.hazards.slice(0, 3)).slice(0, 5);
+      ? `${above.length} hazard${above.length === 1 ? '' : 's'} stand${above.length === 1 ? 's' : ''} out in this area`
+      : 'No hazard stands out in this area';
+    const list = (above.length ? above : data.hazards.filter(h => !h.not_included && h.years_with_event > 0).slice(0, 3)).slice(0, 5);
     document.getElementById('flow-items').innerHTML = list.map(h =>
       `<div class="item"><b>${esc2(h.name)}</b><span style="color: ${tierTint[h.tier_key] || '#a9cbe6'}; font-weight: 700;">${h.years_with_event} of ${h.window_years} years</span></div>`).join('');
     document.getElementById('flow-foot').textContent = `Real NOAA records for ${loc.county}, 2016–2025, compared with every U.S. county.`;
@@ -100,11 +102,11 @@
   document.querySelectorAll('.js-search').forEach(form => {
     form.addEventListener('submit', e => {
       e.preventDefault();
-      if (form.closest('[data-view="report"]')) { goPreview(fieldsText()); window.scrollTo({ top: 0 }); return; }
-      const input = form.querySelector('input[type="text"]');
-      const addr = input ? input.value.trim() : '';
-      fillFields(addr);
-      pendingAddress = fieldsText() || ' ';
+      if (form.closest('[data-view="report"]')) { goPreview(formPlace()); window.scrollTo({ top: 0 }); return; }
+      // home page: copy state and ZIP into the report form, then open it
+      const st = document.getElementById('home-state').value, zip = document.getElementById('addr-home').value.trim();
+      fState.value = st; fZip.value = zip; fillCounties();
+      pending = { state: st, zip, county: '' };
       if (location.hash === '#report') show('report', true); else location.hash = 'report';
     });
   });

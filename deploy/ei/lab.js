@@ -19,12 +19,12 @@
 
   // ---- Detail-page text for hazards that can get their own page ----
   const DETAIL = {
-    hurricane: { what: 'A tropical storm with sustained winds of 74 mph or more, bringing damaging wind, spin-off tornadoes and heavy rain.', ins: 'Florida homeowners policies usually carry a separate hurricane deductible, often a percentage of the insured value. Flood damage needs a separate flood policy.' },
+    hurricane: { what: 'A tropical storm with sustained winds of 74 mph or more, bringing damaging wind, spin-off tornadoes and heavy rain.', ins: 'Homeowners policies in hurricane-prone states usually carry a separate hurricane deductible, often a percentage of the insured value. Flood damage needs a separate flood policy.' },
     riverine_flooding: { what: 'Flooding from heavy rain when rivers, lakes, canals and storm drains overflow. In flat, low areas water can sit for days.', ins: 'Homeowners and renters insurance do not cover flood. National Flood Insurance Program policies usually take 30 days to start.' },
     coastal_flooding: { what: 'Seawater pushed onto land by storm surge, high tides or onshore winds, often during hurricanes and tropical storms.', ins: 'Storm surge is flood damage: it needs a separate flood policy. Homes in zones starting with V face the highest flood insurance rates.' },
     strong_wind: { what: 'Damaging straight-line winds from thunderstorms, separate from hurricanes and tornadoes. They bring down trees and power lines with little warning.', ins: 'Thunderstorm wind damage is usually covered by standard homeowners insurance under the regular deductible.' },
-    tornado: { what: 'A rotating column of air reaching from a thunderstorm to the ground. In Florida, many tornadoes form during tropical storms and spring storm lines.', ins: 'Tornado damage is usually covered by standard homeowners insurance as wind damage.' },
-    lightning: { what: 'Strikes from thunderstorms that can start fires and damage roofs, wiring and electronics. Florida has some of the most frequent lightning in the U.S.', ins: 'Fire and lightning damage are usually covered by homeowners insurance; check limits for electronics.' },
+    tornado: { what: 'A rotating column of air reaching from a thunderstorm to the ground.', ins: 'Tornado damage is usually covered by standard homeowners insurance as wind damage.' },
+    lightning: { what: 'Strikes from thunderstorms that can start fires and damage roofs, wiring and electronics.', ins: 'Fire and lightning damage are usually covered by homeowners insurance; check limits for electronics.' },
     heat_wave: { what: 'A stretch of unusually hot weather, often with high humidity, that strains people, pets and air conditioning.', ins: 'Heat itself is rarely an insurance event; power outages and A/C failures are the usual costs.' },
     wildfire: { what: 'Uncontrolled fires in brush, grass, pine flatwoods or wetlands, most common in dry spring months.', ins: 'Fire damage is usually covered by homeowners insurance; check that coverage limits match rebuilding costs.' },
     hail: { what: 'Balls of ice that fall during strong thunderstorms, damaging roofs, windows, cars and crops.', ins: 'Hail damage is usually covered by homeowners insurance; some policies have a separate wind and hail deductible.' },
@@ -209,6 +209,8 @@
     return `${MONTHS[best]}–${MONTHS[(best + 2) % 12]} (${Math.round(100 * bestSum / tot)}% of events)`;
   }
 
+  // Not in NOAA's storm records; shown as "not yet included", never as "never recorded"
+  const NOT_INCLUDED = { earthquake: 'USGS earthquake records', volcanic_activity: 'USGS volcano records' };
   function stepDataFile(loc, db, audience) {
     const zone = loc.flood_zone ? ZONES[loc.flood_zone] : null;
     const hazards = HAZARDS.map(hz => {
@@ -219,8 +221,8 @@
         tier: tier.label, tier_key: tier.key, group: tier.group,
         rank_line: rankLine(p, y), history_line: historyLine(y, hz.win), severity_line: SEVERITY[row.severity],
         events_total: years.reduce((s, k) => s + row.events_by_year[k], 0), events_by_year: row.events_by_year, events_by_month: row.events_by_month,
-        season: peakSeason(row.events_by_month) };
-    }).sort((a, b) => b.percentile - a.percentile || b.years_with_event - a.years_with_event || a.name.localeCompare(b.name));
+        season: peakSeason(row.events_by_month), not_included: !!NOT_INCLUDED[hz.id] };
+    }).map(h => h.not_included ? Object.assign(h, { group: 'na', tier: 'Not yet included', tier_key: 'none', rank_line: 'Not yet included', history_line: 'Not yet included' }) : h).sort((a, b) => b.percentile - a.percentile || b.years_with_event - a.years_with_event || a.name.localeCompare(b.name));
     const above = hazards.filter(h => h.group === 'above');
     const counts = Object.fromEntries(GROUPS.map(g => [g.key, hazards.filter(h => h.group === g.key).length]));
     const claims = db.tract_flood_claims;
@@ -236,14 +238,14 @@
     if (!zone) checklist = [{ bold: 'Look up the exact flood zone', text: "for the home on FEMA's Flood Map Service Center (msc.fema.gov)." }].concat(checklist);
     let lead;
     if (zone && claimsInfo) lead = `This property sits in FEMA flood zone ${loc.flood_zone} (${zone[1].toLowerCase()}). Homes in this census tract filed ${claimsInfo.total} flood insurance claims from 1996 to 2025, the most in ${claimsInfo.peak_year} (${claimsInfo.peak_value}).`;
-    else if (zone) lead = `This property sits in FEMA flood zone ${loc.flood_zone} (${zone[1].toLowerCase()}). Below are the named storms that caused the most recorded damage in ${loc.county}.`;
-    else if (loc.zip_area) lead = `This report covers ZIP code ${loc.zip_area}, using the records for ${loc.county}.${loc.zip_note} The flood zone is looked up for each address; below are the named storms that caused the most recorded damage in the county.`;
-    else lead = `This is a county-level report for ${loc.county}. The flood zone is looked up for each address; below are the named storms that caused the most recorded damage in the county.`;
+    else if (zone) lead = `This property sits in FEMA flood zone ${loc.flood_zone} (${zone[1].toLowerCase()}).${db.storms.length ? ` Below are the named storms that caused the most recorded damage in ${loc.county}.` : ''}`;
+    else if (loc.zip_area) lead = `This report covers ZIP code ${loc.zip_area}, using the records for ${loc.county}.${loc.zip_note} Flood zones are mapped for each property, so look up the home's zone on FEMA's flood map.`;
+    else lead = `This report covers ${loc.county}. Flood zones are mapped for each property, so look up the home's zone on FEMA's flood map.`;
     const now = new Date();
     return {
-      report: { title: 'Home Hazard History', id: `EI-FL-${loc.county.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase()}-${String(Math.floor(rng(loc._addrId)() * 90000) + 10000)}`,
+      report: { title: 'Home Hazard History', id: `EI-${loc.state || 'US'}-${loc.county.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase()}-${String(Math.floor(rng(loc._addrId)() * 90000) + 10000)}`,
         date: now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }), audience, watermark: WM, data_range: `${FIRST_YEAR}–${END_YEAR}`, real_data: !!loc._real },
-      property: { address: loc.address, city: loc.city, state: loc.state, zip: loc.zip, county: loc.county, census_tract: loc.census_tract, latitude: loc.latitude, longitude: loc.longitude, zip_area: loc.zip_area || null },
+      property: { address: loc.address, city: loc.city, state: loc.state, state_name: loc.state_name || 'Florida', zip: loc.zip, county: loc.county, census_tract: loc.census_tract, latitude: loc.latitude, longitude: loc.longitude, zip_area: loc.zip_area || null },
       headline: above.length ? `${join(above.map(h => h.name))} ${above.length === 1 ? 'has' : 'have'} been recorded here more often than in most of the U.S.` : 'No hazard has been recorded here more often than in most of the U.S.',
       group_counts: counts,
       hazards,
@@ -272,7 +274,7 @@
   }
 
   const tierColor = key => (TIERS.find(t => t.key === key) || NONE).color;
-  const placeLine = d => d.property.zip ? `${d.property.address}, ${d.property.city}, FL ${d.property.zip}` : `${d.property.address}, Florida`;
+  const placeLine = d => d.property.zip ? `${d.property.address}, ${d.property.city}, ${d.property.state} ${d.property.zip}` : `${d.property.address}, ${d.property.state_name}`;
   const header = d => `<div class="rp-head"><img src="img/logo.png" alt=""><div><div class="t">${esc(d.report.title)}</div><div class="a">${esc(placeLine(d))}</div></div></div>`;
   const footer = (d, n) => `<div class="rp-foot"><span>© Emergency Insights · Report ${esc(d.report.id)}</span><b>${n}</b><span>${esc(d.report.date)}</span></div>`;
   let WM = 'SAMPLE';
@@ -280,14 +282,14 @@
 
   function pageCover(d) {
     return shell(`<div class="rp-cv-top"><img src="img/logo.png" alt=""><div class="rp-cv-title"><div class="e">Emergency Insights Report</div><div class="h">Home<br>Hazard<br>History</div><div class="s">What this address has been through, from public records</div><div class="r"></div></div></div>
-      <div class="rp-cv-mid"><div class="lb">${d.property.zip ? 'Property' : 'Area'}</div><div class="a1">${esc(d.property.address)}</div><div class="a2">${d.property.zip ? `${esc(d.property.city)}, FL ${esc(d.property.zip)} · ${esc(d.property.county)}` : d.property.zip_area ? 'Florida · area report by ZIP code' : 'Florida · county-level report'}</div>
+      <div class="rp-cv-mid"><div class="lb">${d.property.zip ? 'Property' : 'Area'}</div><div class="a1">${esc(d.property.address)}</div><div class="a2">${d.property.zip ? `${esc(d.property.city)}, FL ${esc(d.property.zip)} · ${esc(d.property.county)}` : d.property.zip_area ? `${d.property.state_name} · area report by ZIP code` : `${d.property.state_name} · county-level report`}</div>
       <div class="rp-cv-meta"><div><div class="l">Report date</div><div class="v">${esc(d.report.date)}</div></div><div><div class="l">Report ID</div><div class="v">${esc(d.report.id)}</div></div><div><div class="l">Prepared for</div><div class="v">${{ buying: 'Home buyer', renting: 'Renter', living: 'Resident' }[d.report.audience]}</div></div></div></div>
       <div class="rp-cv-bot"><div class="rp-cv-facts"><div><div class="v">18</div><div class="l">Natural hazards reviewed</div></div><div><div class="v">${WIN}</div><div class="l">Years of records (${d.report.data_range})</div></div><div><div class="s">NOAA · FEMA · USGS</div><div class="l">Public data sources</div></div></div>
       <div class="rp-cv-foot"><span>This report describes how often hazards have been recorded here in the past. They are not a prediction, and this is not an inspection, appraisal or insurance determination.</span><span>1</span></div></div>`);
   }
 
   function pageSummary(d) {
-    const rec = d.hazards.filter(h => h.years_with_event > 0), none = d.hazards.filter(h => h.years_with_event === 0);
+    const rec = d.hazards.filter(h => h.years_with_event > 0 && !h.not_included), none = d.hazards.filter(h => h.years_with_event === 0 && !h.not_included), na = d.hazards.filter(h => h.not_included);
     const counts = GROUPS.map(g => `<div class="rp-count"><div class="n" style="color:${g.color}">${d.group_counts[g.key]}</div><div><div class="l" style="color:${g.color}">${g.label}</div><div class="m">${g.meaning}</div></div></div>`).join('');
     const last = Number(Object.keys(d.hazards[0].events_by_year).slice(-1)[0]);
     const rows = rec.map(h => {
@@ -308,7 +310,8 @@
       <div class="rp-counts">${counts}</div>
       <div class="rp-label">What has been recorded in ${esc(d.property.county)}</div>
       <table class="rp-sum"><thead><tr><th>Hazard</th><th>Years with damaging events, ${FIRST_YEAR}–${END_YEAR}</th><th>Last recorded</th><th>Compared with the rest of the U.S.<div class="ends"><span>Less often</span><span>More often</span></div></th></tr></thead><tbody>${rows}</tbody></table>
-      ${none.length ? `<p class="rp-none"><b>Never recorded here</b> (${none.length} hazards): ${join(none.map(h => h.name))}.</p>` : ''}
+      ${none.length ? `<p class="rp-none"><b>Never recorded here</b> since ${FIRST_YEAR} (${none.length} hazards): ${join(none.map(h => h.name))}.</p>` : ''}
+      ${na.length ? `<p class="rp-none"><b>Not yet included:</b> ${join(na.map(h => h.name))}. These come from USGS records, which we are adding next.</p>` : ''}
       <div class="rp-legend">Each square is one year, ${FIRST_YEAR} on the left; a filled square means at least one damaging event was recorded that year. The comparison ranks ${esc(d.property.county)} among all 3,144 U.S. counties by how often each hazard has been recorded. Source: NOAA Storm Events Database. This is a record of the past, not a forecast.</div></div>` + footer(d, 2));
   }
 
@@ -333,7 +336,7 @@
       <div class="rp-duo"><div class="rp-map"><div><div class="pin"></div>Satellite view of the property<br>will appear here</div><div class="co">${d.property.latitude.toFixed(4)}, ${d.property.longitude.toFixed(4)}${d.property.census_tract ? ' · Tract ' + d.property.census_tract : ' · county center'}</div></div>
       <div class="rp-zone"><div class="lb">FEMA flood zone</div>${zoneHtml}</div></div>
       <div class="rp-label">Flood insurance claims nearby</div>${claimsHtml}
-      <div class="rp-label">Major storms on record in ${esc(d.property.county)}</div><table class="rp-events">${rows}</table>
+      <div class="rp-label">Major storms on record in ${esc(d.property.county)}</div>${rows ? `<table class="rp-events">${rows}</table>` : `<p class="rp-none" style="margin-top:0">No named tropical storm left recorded damage in the county since ${FIRST_YEAR}.</p>`}
       <div class="rp-label">${esc(d.page3.checklist_title)}</div><div class="rp-checks">${checks}</div></div>` + footer(d, 3));
   }
 
@@ -379,53 +382,68 @@
 
   // ---- Real Florida data (prepared by prepare.py from NOAA records and hurricane tracks) ----
   const REAL_ADDRESSES = [{"label": "Orlando City Hall", "line1": "400 S Orange Ave", "city": "Orlando", "zip": "32801", "fips": "12095", "tract": "189.02", "lat": 28.5383, "lon": -81.379, "zone": "X"}, {"label": "Miami City Hall", "line1": "3500 Pan American Dr", "city": "Miami", "zip": "33133", "fips": "12086", "tract": "68.01", "lat": 25.7287, "lon": -80.235, "zone": "AE"}, {"label": "St. Petersburg City Hall", "line1": "175 5th St N", "city": "St. Petersburg", "zip": "33701", "fips": "12103", "tract": "215.02", "lat": 27.7731, "lon": -82.6401, "zone": "X"}, {"label": "Tallahassee City Hall", "line1": "300 S Adams St", "city": "Tallahassee", "zip": "32301", "fips": "12073", "tract": "2", "lat": 30.4395, "lon": -84.282, "zone": "X"}, {"label": "Tampa City Hall", "line1": "315 E Kennedy Blvd", "city": "Tampa", "zip": "33602", "fips": "12057", "tract": "51.01", "lat": 27.9477, "lon": -82.4578, "zone": "X"}, {"label": "Jacksonville City Hall", "line1": "117 W Duval St", "city": "Jacksonville", "zip": "32202", "fips": "12031", "tract": "172", "lat": 30.3297, "lon": -81.6588, "zone": "X"}, {"label": "Monroe County Courthouse", "line1": "500 Whitehead St", "city": "Key West", "zip": "33040", "fips": "12087", "tract": "9724", "lat": 24.5552, "lon": -81.804, "zone": "X"}, {"label": "Fort Myers City Hall", "line1": "2200 Second St", "city": "Fort Myers", "zip": "33901", "fips": "12071", "tract": "803", "lat": 26.642, "lon": -81.8694, "zone": "X500"}, {"label": "Gainesville City Hall", "line1": "200 E University Ave", "city": "Gainesville", "zip": "32601", "fips": "12001", "tract": "5", "lat": 29.652, "lon": -82.3232, "zone": "X"}, {"label": "Pensacola City Hall", "line1": "222 W Main St", "city": "Pensacola", "zip": "32502", "fips": "12033", "tract": "1", "lat": 30.4069, "lon": -87.218, "zone": "AE"}];
-  let REAL = null, ZIPS = null;
-  const realReady = Promise.all([
-    fetch('data/florida_db.json').then(r => (r.ok ? r.json() : null)).catch(() => null),
-    fetch('data/fl_zips.json').then(r => (r.ok ? r.json() : null)).catch(() => null)
-  ]).then(([j, z]) => { REAL = j; ZIPS = z; return j; });
+  // States: [abbreviation, name, FIPS]
+  const STATES = [['AL','Alabama','01'],['AK','Alaska','02'],['AZ','Arizona','04'],['AR','Arkansas','05'],['CA','California','06'],['CO','Colorado','08'],['CT','Connecticut','09'],['DE','Delaware','10'],['DC','District of Columbia','11'],['FL','Florida','12'],['GA','Georgia','13'],['HI','Hawaii','15'],['ID','Idaho','16'],['IL','Illinois','17'],['IN','Indiana','18'],['IA','Iowa','19'],['KS','Kansas','20'],['KY','Kentucky','21'],['LA','Louisiana','22'],['ME','Maine','23'],['MD','Maryland','24'],['MA','Massachusetts','25'],['MI','Michigan','26'],['MN','Minnesota','27'],['MS','Mississippi','28'],['MO','Missouri','29'],['MT','Montana','30'],['NE','Nebraska','31'],['NV','Nevada','32'],['NH','New Hampshire','33'],['NJ','New Jersey','34'],['NM','New Mexico','35'],['NY','New York','36'],['NC','North Carolina','37'],['ND','North Dakota','38'],['OH','Ohio','39'],['OK','Oklahoma','40'],['OR','Oregon','41'],['PA','Pennsylvania','42'],['RI','Rhode Island','44'],['SC','South Carolina','45'],['SD','South Dakota','46'],['TN','Tennessee','47'],['TX','Texas','48'],['UT','Utah','49'],['VT','Vermont','50'],['VA','Virginia','51'],['WA','Washington','53'],['WV','West Virginia','54'],['WI','Wisconsin','55'],['WY','Wyoming','56']];
+  const ST_NAME = Object.fromEntries(STATES.map(([a, n]) => [a, n]));
+  const ST_OF_FIPS = Object.fromEntries(STATES.map(([a, , f]) => [f, a]));
+  const SDB = {};   // loaded states: { XX: { counties, zips } }
+  function loadState(st) {
+    if (!SDB[st]) SDB[st] = Promise.all([
+      fetch(`data/states/${st}.json`).then(r => { if (!r.ok) throw new Error('state'); return r.json(); }),
+      fetch(`data/zips/${st}.json`).then(r => (r.ok ? r.json() : {})).catch(() => ({}))
+    ]).then(([d, z]) => ({ counties: d.counties, zips: z })).catch(e => { delete SDB[st]; throw e; });
+    return SDB[st];
+  }
+  const loaded = {};   // resolved state data, for synchronous lookups while building a report
+  const countyOf = f => (loaded[ST_OF_FIPS[f.slice(0, 2)]] || {}).counties?.[f] || (REAL && REAL.counties[f]);
 
-  // Turn what someone typed (an address or a ZIP) into a place the database knows.
-  // Returns { val } on success or { error } with a message to show.
-  function resolveInput(text) {
-    const t = (text || '').trim();
-    if (!REAL || !ZIPS) return { error: 'The Florida data is still loading. Try again in a moment.' };
-    const zips = t.match(/\b\d{5}\b/g);
-    if (!zips) return { error: 'Add the 5-digit ZIP code (for example 32801). The prototype finds the area by ZIP code.' };
-    const zip = zips[zips.length - 1];
-    if (!ZIPS[zip]) return { error: `${zip} isn't a Florida ZIP code we know. The prototype covers Florida only.` };
-    const num = (t.match(/^\s*(\d+)\s/) || [])[1];
-    const i = REAL_ADDRESSES.findIndex(a => a.zip === zip && num && a.line1.startsWith(num + ' '));
-    return { val: i >= 0 ? 'addr:' + i : 'zip:' + zip };
+  let REAL = null;
+  const realReady = loadState('FL').then(d => { loaded.FL = d; REAL = d; return d; }).catch(() => null);
+
+  // A place to report on: { state, zip } or { state, county }. Returns { val } or { error }.
+  async function resolvePlace({ state, zip, county }) {
+    if (!state || !ST_NAME[state]) return { error: 'Choose a state.' };
+    let d;
+    try { d = await loadState(state); } catch (e) { return { error: 'The data for this state did not load. Check your connection and try again.' }; }
+    loaded[state] = d;
+    if (county) return d.counties[county] ? { val: 'cty:' + county } : { error: 'Choose a county from the list.' };
+    const z = (zip || '').trim();
+    if (!/^\d{5}$/.test(z)) return { error: 'Enter a 5-digit ZIP code, or choose a county.' };
+    if (!d.zips[z]) return { error: `${z} isn't a ZIP code in ${ST_NAME[state]}. Check the state, or choose a county instead.` };
+    return { val: `zip:${state}:${z}` };
+  }
+  async function countiesOf(state) {
+    const d = await loadState(state); loaded[state] = d;
+    return Object.entries(d.counties).map(([f, c]) => ({ fips: f, name: c.name })).sort((a, b) => a.name.localeCompare(b.name));
   }
   const money = v => v >= 1e9 ? `$${(v / 1e9).toFixed(1)} billion` : v >= 1e6 ? `$${Math.round(v / 1e6)} million` : v >= 1e3 ? `$${Math.round(v / 1e3)} thousand` : v > 0 ? `$${Math.round(v)}` : 'no dollar amount';
 
   function realGeocode(val) {
     if (val.startsWith('addr:')) {
-      const a = REAL_ADDRESSES[Number(val.slice(5))], c = REAL.counties[a.fips];
-      return { address: a.line1, city: a.city, state: 'FL', zip: a.zip, county: c.name, county_fips: a.fips, census_tract: a.tract,
+      const a = REAL_ADDRESSES[Number(val.slice(5))], c = countyOf(a.fips);
+      return { address: a.line1, city: a.city, state: 'FL', state_name: 'Florida', zip: a.zip, county: c.name, county_fips: a.fips, census_tract: a.tract,
         latitude: a.lat, longitude: a.lon, flood_zone: a.zone, place: a.label,
         source: 'Census geocoder and FEMA National Flood Hazard Layer, looked up in advance', _addrId: val, _real: true };
     }
     if (val.startsWith('zip:')) {
-      const zip = val.slice(4), fl = ZIPS[zip], c = REAL.counties[fl[0]];
-      const others = fl.slice(1).map(f => REAL.counties[f].name);
-      return { address: `ZIP ${zip} · ${c.name}`, city: '', state: 'FL', zip: '', county: c.name, county_fips: fl[0], census_tract: null,
+      const [, st, zip] = val.split(':'), fl = loaded[st].zips[zip], c = countyOf(fl[0]);
+      const others = fl.slice(1).map(f => countyOf(f).name);
+      return { address: `ZIP ${zip} · ${c.name}`, city: '', state: st, state_name: ST_NAME[st], zip: '', county: c.name, county_fips: fl[0], census_tract: null,
         latitude: c.lat, longitude: c.lon, flood_zone: null, place: `ZIP code ${zip}`, zip_area: zip,
         zip_note: others.length ? ` Part of this ZIP code is in ${join(others)}; this report uses ${c.name}, where most of it lies.` : '',
         source: 'Census ZIP code to county table, then the county center from the Census county file', _addrId: val, _real: true };
     }
-    const f = val.slice(7), c = REAL.counties[f];
-    return { address: c.name, city: '', state: 'FL', zip: '', county: c.name, county_fips: f, census_tract: null,
+    const f = val.startsWith('cty:') ? val.slice(4) : val.slice(7), c = countyOf(f), st = ST_OF_FIPS[f.slice(0, 2)];
+    return { address: c.name, city: '', state: st, state_name: ST_NAME[st], zip: '', county: c.name, county_fips: f, census_tract: null,
       latitude: c.lat, longitude: c.lon, flood_zone: null, place: 'County-level report',
       source: 'County center from the Census county file', _addrId: val, _real: true };
   }
   function realLookup(loc) {
-    const c = REAL.counties[loc.county_fips];
+    const c = countyOf(loc.county_fips);
     const rows = HAZARDS.map(hz => { const v = c.h[hz.id]; return { hazard: hz.id, national_percentile: v[0], years_with_event: v[1], severity: v[2], events_by_year: v[3], events_by_month: v[4] }; });
     const storms = c.storms.map(st => ({ date: `${MONTHS[st.month - 1]} ${st.year}`, name: st.name, hazards: ['Hurricane'],
       summary: `NOAA recorded ${money(st.damage)} in damage in the county.`, year: st.year, month: st.month - 1 }));
-    return { source: 'florida_db.json: real NOAA Storm Events and hurricane tracks, ranked against every U.S. county', county_rows: rows, tract_flood_claims: null, storms };
+    return { source: 'states/XX.json: real NOAA Storm Events and hurricane tracks, ranked against every U.S. county', county_rows: rows, tract_flood_claims: null, storms };
   }
 
   // ---- UI ----
@@ -508,9 +526,9 @@
     WM = mode === 'real' ? 'PROTOTYPE' : 'SAMPLE';
     let val = sel.value;
     if (mode === 'real' && zipIn.value.trim()) {
-      const r = resolveInput(zipIn.value);
-      if (r.error) { zipMsg.textContent = r.error; return; }
-      val = r.val;
+      const z = zipIn.value.trim();
+      if (!loaded.FL || !loaded.FL.zips[z]) { zipMsg.textContent = `${z} isn't a Florida ZIP code we know.`; return; }
+      val = `zip:FL:${z}`;
     }
     const audience = (document.querySelector('input[name="lab-aud"]:checked') || {}).value || 'buying';
     let t = performance.now();
@@ -596,7 +614,7 @@
   // Shared with the "Get a report" flow
   window.EI_LAB = {
     ready: realReady,
-    resolveInput,
+    STATES, resolvePlace, countiesOf,
     makeReport(val, audience) {
       WM = 'PROTOTYPE';
       const loc = realGeocode(val), data = stepDataFile(loc, realLookup(loc), audience);
