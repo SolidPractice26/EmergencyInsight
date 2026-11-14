@@ -43,6 +43,7 @@ After that, each report is a quick lookup plus filling in a fixed template, with
 | `data/processed/` | The output: ratings for all 3,144 U.S. counties (`county_ratings.csv`), the Florida slice the website uses (`florida_db.json`), 10 test addresses with their real flood zones (`fl_addresses.json`), and a Florida ZIP code → county table (`fl_zips.json`, from the Census ZIP-county relationship file; a ZIP that spans counties uses the one with the most land). |
 | `report_generator/` | `render.py` fills the HTML templates in `templates/` with a report data file and prints them to PDF. `data/hazards.json` holds the hazard wording, and `data/audiences.json` holds the buyer, renter and resident checklists. |
 | `website/` | The prototype website, including the Test lab that builds reports in the browser from `florida_db.json`. |
+| `deploy/ei/` | The same website as a normal stand-alone page, ready to copy into the portfolio site as `javierarocha.me/ei`. |
 | `docs/` | A sample report. |
 
 ## Running it
