@@ -260,6 +260,32 @@ def main(noaa_path, ib_path, gaz_path, out_dir):
     ratings = pd.DataFrame(rows).merge(counties[["GEOID", "USPS", "NAME"]], on="GEOID")
     ratings.to_csv(out_dir / "county_ratings.csv", index=False)
 
+    # --- National facts per hazard, for the website's hazard guide ---
+    names = counties.set_index("GEOID")[["NAME", "USPS"]]
+    types_of = {}
+    for t, hz in HAZARD_OF.items():
+        types_of.setdefault(hz, []).append(t)
+    rec = ev[counts & ev.hazard.notna()]
+    meta = {"first_year": START_YEAR, "last_year": LAST_YEAR, "counties_total": len(counties),
+            "data_through": str(ev.date.max().date()), "updated": pd.Timestamp.today().strftime("%Y-%m-%d"), "hazards": {}}
+    for hz in HAZARDS:
+        e = events[events.hazard == hz]
+        m = {"counties": int(e.GEOID.nunique()), "events": int(len(e)), "noaa_types": sorted(types_of.get(hz, [])),
+             "counts": "all records" if hz in COUNT_ALL_RECORDS else "damaging records",
+             "per_area": hz in PER_AREA, "by_month": [int((e.month == k).sum()) for k in range(1, 13)]}
+        if hz == "hurricane" and len(hur):
+            last = hur.sort_values("closest").iloc[-1]
+            m["latest"] = {"date": str(last.closest.date()), "place": f"{names.at[last.GEOID, 'NAME']}, {names.at[last.GEOID, 'USPS']}", "name": last.storm}
+        else:
+            r = rec[rec.hazard == hz]
+            if len(r):
+                last = r.sort_values("date").iloc[-1]
+                m["latest"] = {"date": str(last.date.date()), "place": f"{names.at[last.GEOID, 'NAME']}, {names.at[last.GEOID, 'USPS']}"}
+        top = e.groupby("GEOID").size().rename("n").to_frame().join(names).groupby("USPS").n.sum().sort_values(ascending=False)
+        m["top_states"] = [st for st in top.index[:3]]
+        meta["hazards"][hz] = m
+    (out_dir / "hazards_meta.json").write_text(json.dumps(meta, separators=(",", ":")), encoding="utf-8")
+
     # --- Florida slice for the report ---
     fl = counties[counties.USPS == "FL"]
     db = {"_note": "Real NOAA Storm Events and IBTrACS hurricane tracks, prepared by prepare.py. Flood claims and earthquakes not yet included.",

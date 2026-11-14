@@ -200,7 +200,14 @@
     const t = TIERS.find(t => p >= t.min);
     return t.group === 'above' && years < MIN_YEARS_ABOVE ? TIERS[2] : t;
   }
-  function historyLine(y, w) { return y === 0 ? `No damaging events in ${w} years` : y === w ? `Recorded every year for ${w} years` : `Recorded in ${y} of the last ${w} years`; }
+  const COUNT_ALL = ['heat_wave', 'cold_wave', 'drought', 'coastal_flooding', 'winter_weather'];
+  const unitOf = (id, n) => id === 'hurricane' ? `storm${n === 1 ? '' : 's'}` : `event${n === 1 ? '' : 's'}`;
+  function countRule(id, county) {
+    if (id === 'hurricane') return `Each named storm counts once, when its path came within 150 miles and NOAA recorded damage from it in ${county}`;
+    if (COUNT_ALL.includes(id)) return `Every NOAA record of this hazard in ${county} counts`;
+    return `NOAA records in ${county} that caused damage, injury or death count`;
+  }
+  function historyLine(y, w) { return y === 0 ? `No recorded events in ${w} years` : y === w ? `Recorded every year for ${w} years` : `Recorded in ${y} of the last ${w} years`; }
   function rankLine(p, y) { return y === 0 ? 'No events on record here' : p >= 50 ? `More events than ${p}% of U.S. counties` : `Fewer events than ${100 - p}% of U.S. counties`; }
   function peakSeason(bm) {
     const tot = bm.reduce((a, b) => a + b, 0); if (!tot) return 'No clear season';
@@ -298,21 +305,22 @@
       const hit = yrs.filter(y => (h.events_by_year[y] || 0) > 0);
       // one square per year, drawn as SVG so the PDF renderer places it exactly
       const sq = Math.max(3, Math.floor((150 - 2 * (yrs.length - 1)) / yrs.length));
+      // squares are one neutral color: they count years; the colored dot shows the comparison with the U.S.
       const strip = `<svg width="${yrs.length * (sq + 2) - 2}" height="7" viewBox="0 0 ${yrs.length * (sq + 2) - 2} 7" style="display:block">` +
-        yrs.map((y, k) => `<rect x="${k * (sq + 2)}" y="0" width="${sq}" height="7" rx="1" fill="${(h.events_by_year[y] || 0) > 0 ? c : '#E6EDF3'}"/>`).join('') + `</svg>`;
+        yrs.map((y, k) => `<rect x="${k * (sq + 2)}" y="0" width="${sq}" height="7" rx="1" fill="${(h.events_by_year[y] || 0) > 0 ? '#3D6A93' : '#E6EDF3'}"/>`).join('') + `</svg>`;
       const cmp = h.percentile >= 50 ? `More often than in <b>${h.percentile}%</b> of U.S. counties` : `Less often than in <b>${100 - h.percentile}%</b> of U.S. counties`;
       return `<tr><td class="hz"><span class="dot" style="background:${c}"></span>${h.name}</td>
-        <td class="yr"><div><b>${h.years_with_event}</b> of ${h.window_years} years</div><div class="strip">${strip}</div></td>
+        <td class="yr"><div><b>${h.years_with_event}</b> of ${h.window_years} years <span class="ev">· ${h.events_total} ${unitOf(h.id, h.events_total)}</span></div><div class="strip">${strip}</div></td>
         <td class="ls">${hit.length ? hit[hit.length - 1] : '—'}</td>
         <td class="cm"><div class="bar"><span style="left:${Math.min(98, Math.max(2, h.percentile))}%;background:${c}"></span></div><div class="t">${cmp}</div></td></tr>`;
     }).join('');
     return shell(header(d) + `<div class="rp-body"><div class="rp-eyebrow">Section 1 · At a glance</div><h1 class="rp-h1">Hazard Summary</h1><p class="rp-lead" style="font-weight:600;color:#003366;">${esc(d.headline)}</p>
       <div class="rp-counts">${counts}</div>
       <div class="rp-label">What has been recorded in ${esc(d.property.county)}</div>
-      <table class="rp-sum"><thead><tr><th>Hazard</th><th>Years with damaging events, ${FIRST_YEAR}–${END_YEAR}</th><th>Last recorded</th><th>Compared with the rest of the U.S.<div class="ends"><span>Less often</span><span>More often</span></div></th></tr></thead><tbody>${rows}</tbody></table>
+      <table class="rp-sum"><thead><tr><th>Hazard</th><th>Years with recorded events, ${FIRST_YEAR}–${END_YEAR}</th><th>Last recorded</th><th>Compared with the rest of the U.S.<div class="ends"><span>Less often</span><span>More often</span></div></th></tr></thead><tbody>${rows}</tbody></table>
       ${none.length ? `<p class="rp-none"><b>Never recorded here</b> since ${FIRST_YEAR} (${none.length} hazards): ${join(none.map(h => h.name))}.</p>` : ''}
       ${na.length ? `<p class="rp-none"><b>Not yet included:</b> ${join(na.map(h => h.name))}. These come from USGS records, which we are adding next.</p>` : ''}
-      <div class="rp-legend">Each square is one year, ${FIRST_YEAR} on the left; a filled square means at least one damaging event was recorded that year. The comparison ranks ${esc(d.property.county)} among all 3,144 U.S. counties by how often each hazard has been recorded. Source: NOAA Storm Events Database. This is a record of the past, not a forecast.</div></div>` + footer(d, 2));
+      <div class="rp-legend">Each square is one year, ${FIRST_YEAR} on the left. A square is filled when NOAA recorded at least one event of that hazard in the county that year: for most hazards, one that caused damage, injury or death; for heat, cold, drought, winter weather and coastal flooding, any recorded event. A hurricane counts once per named storm, when its path came within 150 miles and it left recorded damage in the county. The colored dot shows the comparison. The comparison ranks ${esc(d.property.county)} among all 3,144 U.S. counties by how often each hazard has been recorded. Source: NOAA Storm Events Database. This is a record of the past, not a forecast.</div></div>` + footer(d, 2));
   }
 
   function pageProperty(d) {
@@ -352,19 +360,19 @@
       <p class="rp-lead">${esc(det.what)}</p>
       <div class="rp-facts" style="--b:${color}"><div class="rp-fact"><div class="l">Compared with the U.S.</div><div class="v">${h.rank_line}</div></div><div class="rp-fact"><div class="l">History</div><div class="v">${h.history_line}</div></div><div class="rp-fact"><div class="l">Peak season</div><div class="v">${h.season}</div></div><div class="rp-fact"><div class="l">Severity</div><div class="v">${h.severity_line}</div></div></div>
       <div class="rp-label">What has happened in ${esc(d.property.county)}</div>
-      <div class="rp-charts"><div class="rp-chart"><div class="rp-chart-t">${h.events_total} damaging event${h.events_total === 1 ? '' : 's'}, ${ys[0]}–${ys[ys.length - 1]}</div><div class="rp-chart-s">Events per year</div>${yearly}</div><div class="rp-chart"><div class="rp-chart-t">Most events fall in ${h.season.split(' (')[0]}</div><div class="rp-chart-s">Events by month, all years combined</div>${monthly}</div></div>
+      <div class="rp-charts"><div class="rp-chart"><div class="rp-chart-t">${h.events_total} recorded ${unitOf(h.id, h.events_total)}, ${ys[0]}–${ys[ys.length - 1]}</div><div class="rp-chart-s">Events per year</div>${yearly}</div><div class="rp-chart"><div class="rp-chart-t">Most events fall in ${h.season.split(' (')[0]}</div><div class="rp-chart-s">Events by month, all years combined</div>${monthly}</div></div>
       ${storms.length ? `<div class="rp-label">Named storms on record</div><table class="rp-events">${storms.map(s => `<tr><td>${s.date}</td><td class="n">${s.name}</td><td>${s.summary}</td></tr>`).join('')}</table>` : ''}
       <div class="rp-ins"><div class="l">Insurance</div><div class="t">${esc(det.ins)}</div></div>
       <p class="rp-bottomnote">${d.report.real_data
-        ? `Events are damaging ${h.name.toLowerCase()} events recorded for ${esc(d.property.county)} in NOAA's Storm Events Database${h.id === 'hurricane' ? ', matched to NOAA hurricane tracks passing within 150 miles' : ''}, ${FIRST_YEAR}–${END_YEAR}. Prototype: methods are still being refined. This describes the past and is not a forecast.`
+        ? `Source: NOAA Storm Events Database, ${FIRST_YEAR}–${END_YEAR}${h.id === 'hurricane' ? ', matched to NOAA hurricane tracks' : ''}. ${countRule(h.id, esc(d.property.county))}. Prototype: methods are still being refined. This describes the past and is not a forecast.`
         : `Events are made-up sample data for testing the layout. In the real report they come from NOAA's Storm Events Database for ${esc(d.property.county)}, ${FIRST_YEAR}–${END_YEAR}. This describes the past and is not a forecast.`}</p></div>` + footer(d, pageNum));
   }
 
   function pageClosing(d, pageNum) {
-    const tiers = TIERS.map((t, k) => `<tr><td><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${t.color};margin-right:6px;"></i>${t.label}</td><td>${k === 4 ? 'Recorded, but less often than in most counties' : `More often than in ${t.min}–${k ? TIERS[k - 1].min - 1 : 99}% of U.S. counties`}</td></tr>`).join('') + `<tr><td><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${NONE.color};margin-right:6px;"></i>Not recorded</td><td>No damaging events since ${FIRST_YEAR}</td></tr>`;
+    const tiers = TIERS.map((t, k) => `<tr><td><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${t.color};margin-right:6px;"></i>${t.label}</td><td>${k === 4 ? 'Recorded, but less often than in most counties' : `More often than in ${t.min}–${k ? TIERS[k - 1].min - 1 : 99}% of U.S. counties`}</td></tr>`).join('') + `<tr><td><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${NONE.color};margin-right:6px;"></i>Not recorded</td><td>No recorded events since ${FIRST_YEAR}</td></tr>`;
     return `<div class="rp-page"><div class="rp-stripe"></div><div class="rp-wm">${WM}</div>${header(d)}<div class="rp-body"><div class="rp-eyebrow">Section 3 · About this report</div><h1 class="rp-h1">How This Report Works</h1>
       <p class="rp-lead">Every number comes from public government records of events that have already happened. Nothing here is a forecast.</p>
-      <div class="rp-label">How each hazard is compared</div><ul class="rp-ul"><li>Count the damaging events of each hazard recorded in the county since ${FIRST_YEAR} (per square mile for local hazards such as hail and tornadoes).</li><li>Compare the county with every U.S. county, for that hazard only.</li><li>Show two plain facts side by side: how many years had events, and where the county falls among all U.S. counties. A hazard is called above the U.S. norm only if it was recorded in at least ${MIN_YEARS_ABOVE} different years. No scores, no forecasts.</li></ul>
+      <div class="rp-label">How each hazard is compared</div><ul class="rp-ul"><li>Count the events of each hazard NOAA recorded in the county since ${FIRST_YEAR} (for most hazards, those that caused damage, injury or death; a hurricane counts once per storm) (per square mile for local hazards such as hail and tornadoes).</li><li>Compare the county with every U.S. county, for that hazard only.</li><li>Show two plain facts side by side: how many years had events, and where the county falls among all U.S. counties. A hazard is called above the U.S. norm only if it was recorded in at least ${MIN_YEARS_ABOVE} different years. No scores, no forecasts.</li></ul>
       <div class="rp-label">What the colors mean</div><table class="rp-tbl"><tr><th style="text-align:left">COLOR</th><th style="text-align:left">MEANING</th></tr>${tiers}</table>
       <div class="rp-label">Data sources</div><ul class="rp-ul"><li><b>NOAA Storm Events Database</b>: damaging weather events by type, date and county</li><li><b>OpenFEMA NFIP claims</b>: flood insurance claims by census tract</li><li><b>FEMA National Flood Hazard Layer</b>: the property's flood zone</li><li><b>FEMA National Risk Index</b>: the 18 hazards and a cross-check</li><li><b>USGS Earthquake Catalog</b> and <b>Census Geocoder</b></li></ul>
       <div class="rp-label">Limits</div><ul class="rp-ul"><li>Records depend on reporting, and most weather records are by county.</li><li>Flood claims count only insured homes. The past is a guide, not a guarantee.</li></ul></div>
@@ -610,6 +618,79 @@
     }
   }
   pdfBtn.addEventListener('click', () => savePdf(lastPages, lastData, pdfBtn, pdfStatus));
+
+  // ---- Hazard guide: built from data/hazards_meta.json (written by prepare.py) ----
+  const HZ_GROUPS = [
+    ['wind', 'Wind and storms', '#3d6f96', ['hurricane', 'tornado', 'strong_wind', 'hail', 'lightning']],
+    ['water', 'Water', '#2a7ab0', ['riverine_flooding', 'coastal_flooding', 'tsunami']],
+    ['temp', 'Heat, cold and dry', '#c98a1c', ['heat_wave', 'cold_wave', 'winter_weather', 'ice_storm', 'drought', 'wildfire']],
+    ['ground', 'Ground', '#8a6a4b', ['earthquake', 'landslide', 'avalanche', 'volcanic_activity']]
+  ];
+  const HZ_ICON = {
+    wind: '<path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/>',
+    water: '<path d="M3 9c2 0 2-2 4.5-2S10 9 12 9s2.5-2 4.5-2S19 9 21 9M3 14c2 0 2-2 4.5-2s2.5 2 4.5 2 2.5-2 4.5-2 2.5 2 4.5 2M3 19c2 0 2-2 4.5-2s2.5 2 4.5 2 2.5-2 4.5-2 2.5 2 4.5 2"/>',
+    temp: '<path d="M10 13.5V5a2 2 0 1 1 4 0v8.5a4 4 0 1 1-4 0Z"/><path d="M12 9v7"/>',
+    ground: '<path d="M3 19l6-9 4 5 3-4 5 8H3Z"/>'
+  };
+  const icon = k => `<svg viewBox="0 0 24 24" aria-hidden="true">${HZ_ICON[k]}</svg>`;
+  const nameOf = id => HAZARDS.find(h => h.id === id).name;
+  const longDate = d => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  let META = null;
+  const metaReady = fetch('data/hazards_meta.json').then(r => (r.ok ? r.json() : null)).then(j => (META = j)).catch(() => null);
+
+  function hazardCard(id) {
+    const m = META.hazards[id], det = DETAIL[id] || {}, ni = NOT_INCLUDED[id];
+    if (ni || !m || !m.events) return `<article class="hzc" id="hz-${id}" data-name="${nameOf(id).toLowerCase()}">
+      <header><h3>${nameOf(id)}</h3><span class="hzc-tag soon">Not yet included</span></header>
+      <p>${esc(det.what || '')}</p>
+      <p class="hzc-note">Not part of NOAA's storm records. We are adding ${ni || 'USGS records'} next; until then, reports list it as not yet included rather than never recorded.</p></article>`;
+    const pctC = Math.round(100 * m.counties / META.counties_total);
+    const peak = peakSeason(m.by_month).replace(/ \(.*/, '');
+    const bars = barChart(MONTHS.map(x => x[0]), m.by_month, 220, 34, { labelPeaksOnly: true, tick: () => true });
+    return `<article class="hzc" id="hz-${id}" data-name="${nameOf(id).toLowerCase()}">
+      <header><h3>${nameOf(id)}</h3><span class="hzc-tag">Tracked</span></header>
+      <p>${esc(det.what || '')}</p>
+      <dl class="hzc-stats">
+        <div><dt>Counties with records</dt><dd>${m.counties.toLocaleString()} <small>of ${META.counties_total.toLocaleString()} (${pctC}%)</small></dd></div>
+        <div><dt>${id === 'hurricane' ? 'Storm impacts' : 'Events'} since ${META.first_year}</dt><dd>${m.events.toLocaleString()}</dd></div>
+        <div><dt>Most recorded in</dt><dd>${m.top_states.join(', ')}</dd></div>
+        <div><dt>Peak season</dt><dd>${peak}</dd></div>
+      </dl>
+      <div class="hzc-season" aria-hidden="true">${bars}</div>
+      ${m.latest ? `<p class="hzc-latest"><span class="live"></span>Most recent: ${longDate(m.latest.date)}${m.latest.name ? ` · ${esc(m.latest.name)}` : ''} · ${esc(m.latest.place)}</p>` : ''}
+      <details><summary>What we count</summary><p>NOAA record types: ${m.noaa_types.join(', ')}. ${countRule(id, 'the county')}.${m.per_area ? ' Counties are compared per square mile, because these events are reported at points.' : ''}</p></details>
+    </article>`;
+  }
+  async function renderHazardGuide(el, compact) {
+    await metaReady;
+    if (!META) { el.innerHTML = '<p class="small">The hazard data did not load. Reload the page to try again.</p>'; return; }
+    const upd = `NOAA records through ${longDate(META.data_through)} · Updated ${longDate(META.updated)}`;
+    if (compact) {
+      el.innerHTML = `<div class="hz-groups">${HZ_GROUPS.map(([k, t, c, ids]) => `<div class="hz-group" style="--g:${c}"><div class="hz-head"><span class="hz-ic">${icon(k)}</span><div><h3>${t}</h3><p>${ids.length} hazards</p></div></div><ul>${ids.map(id => {
+        const m = META.hazards[id];
+        return `<li><a href="#hazards" data-hz="${id}"><b>${nameOf(id)}</b></a><small>${NOT_INCLUDED[id] || !m.events ? '<em>USGS data coming</em>' : `${m.counties.toLocaleString()} counties`}</small></li>`; }).join('')}</ul></div>`).join('')}</div><p class="small hz-upd">${upd}</p>`;
+      return;
+    }
+    el.innerHTML = `<div class="hzg-top">
+        <div class="hzg-stats"><div><b>${HAZARDS.length}</b><span>hazards in every report</span></div><div><b>${HAZARDS.filter(h => !NOT_INCLUDED[h.id]).length}</b><span>tracked from NOAA records today</span></div><div><b>${META.counties_total.toLocaleString()}</b><span>counties compared</span></div><div><b>${longDate(META.data_through)}</b><span>latest records included</span></div></div>
+        <div class="hzg-tools"><label class="sr" for="hz-filter">Find a hazard</label><input id="hz-filter" type="search" placeholder="Find a hazard, e.g. hail">
+        <nav class="hzg-jump" aria-label="Hazard groups">${HZ_GROUPS.map(([k, t, c]) => `<a href="#hazards" data-jump="${k}" style="--g:${c}">${t}</a>`).join('')}</nav></div>
+      </div>
+      ${HZ_GROUPS.map(([k, t, c, ids]) => `<section class="hzg" id="hzg-${k}" style="--g:${c}"><div class="hzg-head"><span class="hz-ic">${icon(k)}</span><h2 class="h3">${t}</h2><span class="small">${ids.length} hazards</span></div><div class="hzg-grid">${ids.map(hazardCard).join('')}</div></section>`).join('')}
+      <p class="small hz-upd">${upd}. Source: NOAA Storm Events Database and NOAA hurricane tracks (IBTrACS); counties from the U.S. Census.</p>`;
+    const f = el.querySelector('#hz-filter');
+    f.addEventListener('input', () => {
+      const q = f.value.trim().toLowerCase();
+      el.querySelectorAll('.hzc').forEach(c => { c.hidden = q && !c.dataset.name.includes(q); });
+      el.querySelectorAll('.hzg').forEach(g => { g.hidden = ![...g.querySelectorAll('.hzc')].some(c => !c.hidden); });
+    });
+    el.querySelectorAll('[data-jump]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); document.getElementById('hzg-' + a.dataset.jump).scrollIntoView({ behavior: 'smooth', block: 'start' }); }));
+  }
+  const gEl = document.getElementById('hz-guide'), hEl = document.getElementById('hz-home');
+  if (gEl) renderHazardGuide(gEl, false);
+  if (hEl) renderHazardGuide(hEl, true).then(() => hEl.querySelectorAll('[data-hz]').forEach(a => a.addEventListener('click', () => {
+    setTimeout(() => { const c = document.getElementById('hz-' + a.dataset.hz); if (c) { c.scrollIntoView({ block: 'center' }); c.classList.add('flash'); setTimeout(() => c.classList.remove('flash'), 1600); } }, 120);
+  })));
 
   // Shared with the "Get a report" flow
   window.EI_LAB = {
