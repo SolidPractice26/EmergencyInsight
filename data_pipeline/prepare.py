@@ -4,7 +4,7 @@ Emergency Insights — yearly data preparation (prototype)
 Turns raw public records into one small table of ratings for every U.S. county.
 
 Inputs (downloaded files):
-  noaa_all.parquet               NOAA Storm Events details, 1996–2025 (all years combined)
+  noaa_all.parquet               NOAA Storm Events details (all years combined; only START_YEAR on are used)
   ibtracs_NA.csv                 NOAA hurricane tracks (IBTrACS, North Atlantic)
   2024_Gaz_counties_national.txt Census county list with land area and center point
 
@@ -23,8 +23,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+# One record window for every hazard: from START_YEAR to LAST_YEAR.
+# START_YEAR stays fixed, so the window grows by one year with each yearly update.
+START_YEAR = 2016
 LAST_YEAR = 2025
-COMMON_WINDOW, RARE_WINDOW = 10, 30
+WINDOW = LAST_YEAR - START_YEAR + 1
 
 # ---------------------------------------------------------------------------
 # RULE 1: which NOAA event types count toward which FEMA hazard
@@ -55,8 +58,6 @@ HAZARD_OF = {
 HAZARDS = ["avalanche", "coastal_flooding", "cold_wave", "drought", "earthquake", "hail", "heat_wave",
            "hurricane", "ice_storm", "landslide", "lightning", "riverine_flooding", "strong_wind",
            "tornado", "tsunami", "volcanic_activity", "wildfire", "winter_weather"]
-RARE = {"avalanche", "coastal_flooding", "earthquake", "hurricane", "landslide", "tornado",
-        "tsunami", "volcanic_activity", "wildfire"}
 
 # RULE 2: hazards reported at points (a hailstone, a strike) are compared per square mile;
 # area-wide hazards (heat, drought, hurricanes) cover the whole county and are not.
@@ -77,9 +78,10 @@ STORM_ABSORBS = {"Thunderstorm Wind", "High Wind", "Strong Wind", "Tropical Stor
 # Floods and storm surge during a storm keep their own hazard AND add to the storm's damage.
 STORM_CONTRIBUTES = STORM_ABSORBS | {"Flood", "Flash Flood", "Storm Surge/Tide", "Coastal Flood", "Tornado"}
 
-STORM_NEAR_MILES = 100     # storm center within this distance of the county center...
+STORM_NEAR_MILES = 150     # storm center within this distance of the county center (big storms like Harvey reach this far)...
 STORM_MIN_WIND_KT = 34     # ...at tropical-storm strength or more
-STORM_DAYS_AFTER = 2       # records up to 2 days after the closest pass belong to the storm
+STORM_DAYS_BEFORE = 3      # records from 3 days before...
+STORM_DAYS_AFTER = 3       # ...to 3 days after the closest pass belong to the storm (outer bands arrive early)
 
 # RULE 4: severity from the typical damage of a damaging event
 def severity(median_damage):
@@ -152,7 +154,7 @@ def storm_passes(ibtracs_path, counties):
                     usecols=["SID", "SEASON", "NAME", "ISO_TIME", "USA_LAT", "USA_LON", "USA_WIND"])
     for col in ["SEASON", "USA_LAT", "USA_LON", "USA_WIND"]:
         t[col] = pd.to_numeric(t[col], errors="coerce")
-    t = t[(t.SEASON >= LAST_YEAR - RARE_WINDOW + 1) & (t.SEASON <= LAST_YEAR) & (t.USA_WIND >= STORM_MIN_WIND_KT)]
+    t = t[(t.SEASON >= START_YEAR) & (t.SEASON <= LAST_YEAR) & (t.USA_WIND >= STORM_MIN_WIND_KT)]
     t = t.dropna(subset=["USA_LAT", "USA_LON"])
     t["time"] = pd.to_datetime(t.ISO_TIME)
     clat = np.radians(counties.INTPTLAT.values)[:, None]
@@ -184,7 +186,8 @@ def main(noaa_path, ib_path, gaz_path, out_dir):
     ev["damaging"] = (ev.damage > 0) | (ev.hurt > 0)
     ev["year"] = ev.BEGIN_YEARMONTH.str[:4].astype(int)
     ev["month"] = ev.BEGIN_YEARMONTH.str[4:6].astype(int)
-    ev["date"] = pd.to_datetime(ev.BEGIN_YEARMONTH + "15")  # month precision is enough to match storms
+    ev = ev[(ev.year >= START_YEAR) & (ev.year <= LAST_YEAR)].copy()
+    ev["date"] = pd.to_datetime(ev.BEGIN_YEARMONTH + ev.BEGIN_DAY.astype(str).str.zfill(2), format="%Y%m%d")
     ev["hazard"] = ev.EVENT_TYPE.map(HAZARD_OF)
 
     # --- Hurricanes from tracks ---
@@ -193,10 +196,11 @@ def main(noaa_path, ib_path, gaz_path, out_dir):
     if len(passes):
         p = passes[["SID", "GEOID", "closest"]]
         m = ev.reset_index().merge(p, on="GEOID")
-        dt = (m.date - m.closest.dt.tz_localize(None).dt.normalize())
-        # same month as the closest pass (records carry month only), within the storm's days
-        same = (m.year == m.closest.dt.year) & (m.month == m.closest.dt.month) & m.EVENT_TYPE.isin(STORM_CONTRIBUTES)
-        m = m[same].sort_values("index").drop_duplicates("index")
+        dt = (m.date - m.closest.dt.tz_localize(None).dt.normalize()).dt.days
+        # a record belongs to a storm if it began within STORM_DAYS_BEFORE/AFTER days of the closest pass;
+        # when two storms qualify (e.g. Frances and Jeanne, Sept. 2004), the closer date wins
+        same = (dt >= -STORM_DAYS_BEFORE) & (dt <= STORM_DAYS_AFTER) & m.EVENT_TYPE.isin(STORM_CONTRIBUTES)
+        m = m[same].assign(gap=dt[same].abs()).sort_values(["index", "gap"]).drop_duplicates("index")
         ev.loc[m["index"].values, "storm_sid"] = m.SID.values
 
     in_storm = ev.storm_sid.notna()
@@ -228,8 +232,7 @@ def main(noaa_path, ib_path, gaz_path, out_dir):
     rows = []
     area = counties.set_index("GEOID").ALAND_SQMI
     for hz in HAZARDS:
-        win = RARE_WINDOW if hz in RARE else COMMON_WINDOW
-        first = LAST_YEAR - win + 1
+        win, first = WINDOW, START_YEAR
         e = events[(events.hazard == hz) & (events.year >= first) & (events.year <= LAST_YEAR)]
         cnt = e.groupby("GEOID").size().reindex(counties.GEOID, fill_value=0)
         years = e.groupby("GEOID").year.nunique().reindex(counties.GEOID, fill_value=0)
@@ -250,13 +253,12 @@ def main(noaa_path, ib_path, gaz_path, out_dir):
     # --- Florida slice for the report ---
     fl = counties[counties.USPS == "FL"]
     db = {"_note": "Real NOAA Storm Events and IBTrACS hurricane tracks, prepared by prepare.py. Flood claims and earthquakes not yet included.",
-          "last_year": LAST_YEAR, "counties": {}}
+          "first_year": START_YEAR, "last_year": LAST_YEAR, "counties": {}}
     for _, c in fl.iterrows():
         r = ratings[ratings.GEOID == c.GEOID].set_index("hazard")
         h = {}
         for hz in HAZARDS:
-            win = int(r.at[hz, "window_years"])
-            first = LAST_YEAR - win + 1
+            first = START_YEAR
             e = events[(events.GEOID == c.GEOID) & (events.hazard == hz) & (events.year >= first)]
             by_year = {str(y): int((e.year == y).sum()) for y in range(first, LAST_YEAR + 1)}
             by_month = [int((e.month == m).sum()) for m in range(1, 13)]

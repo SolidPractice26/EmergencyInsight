@@ -4,17 +4,18 @@
    COUNTIES stands in for the yearly database, and buildDataFile + the page
    functions mirror render.py and its templates. */
 (() => {
-  const END_YEAR = 2025;
+  const END_YEAR = 2025, FIRST_YEAR = 2016;  // one record window for every hazard; it grows each year
+  const WIN = END_YEAR - FIRST_YEAR + 1;
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  // ---- Master hazard list (id, name, record window in years) ----
+  // ---- Master hazard list (id, name; the third number is no longer used: every hazard uses WIN years) ----
   const HAZARDS = [
     ['avalanche','Avalanche',30],['coastal_flooding','Coastal Flooding',30],['cold_wave','Cold Wave',10],
     ['drought','Drought',10],['earthquake','Earthquake',30],['hail','Hail',10],['heat_wave','Heat Wave',10],
     ['hurricane','Hurricane',30],['ice_storm','Ice Storm',10],['landslide','Landslide',30],['lightning','Lightning',10],
     ['riverine_flooding','Riverine Flooding',10],['strong_wind','Strong Wind',10],['tornado','Tornado',30],
     ['tsunami','Tsunami',30],['volcanic_activity','Volcanic Activity',30],['wildfire','Wildfire',30],['winter_weather','Winter Weather',10]
-  ].map(([id, name, win]) => ({ id, name, win }));
+  ].map(([id, name]) => ({ id, name, win: WIN }));
 
   // ---- Detail-page text for hazards that can get their own page ----
   const DETAIL = {
@@ -80,7 +81,7 @@
   const NONE = { key: 'none', label: 'Not recorded', group: 'below', scores: '0', color: '#C5CDD5' };
   const GROUPS = [
     { key: 'above', label: 'Above the U.S. norm', meaning: 'Recorded more often than in most counties', color: '#B03A2E' },
-    { key: 'average', label: 'Around average', meaning: 'Similar to much of the country', color: '#B7841C' },
+    { key: 'average', label: 'Around average', meaning: 'Similar to much of the country, or recorded only once or twice', color: '#B7841C' },
     { key: 'below', label: 'Below or none', meaning: 'Rare here, or never recorded', color: '#003366' }
   ];
   const SEVERITY = { major: 'Usually causes major damage', moderate: 'Damage varies by event', minor: 'Usually minor damage', none: '' };
@@ -191,7 +192,14 @@
   }
 
   // ---- STEP 3: write the data file ----
-  function tierFor(p, years) { if (years === 0) return NONE; return TIERS.find(t => p >= t.min); }
+  // A hazard counts as above the U.S. norm only if it was recorded in at least MIN_YEARS_ABOVE different years;
+  // one or two events can rank a county high when most counties have none, which reads as misleading.
+  const MIN_YEARS_ABOVE = 3;
+  function tierFor(p, years) {
+    if (years === 0) return NONE;
+    const t = TIERS.find(t => p >= t.min);
+    return t.group === 'above' && years < MIN_YEARS_ABOVE ? TIERS[2] : t;
+  }
   function historyLine(y, w) { return y === 0 ? `No damaging events in ${w} years` : y === w ? `Recorded every year for ${w} years` : `Recorded in ${y} of the last ${w} years`; }
   function rankLine(p, y) { return y === 0 ? 'No events on record here' : p >= 50 ? `More events than ${p}% of U.S. counties` : `Fewer events than ${100 - p}% of U.S. counties`; }
   function peakSeason(bm) {
@@ -208,7 +216,7 @@
       const p = row.national_percentile, y = row.years_with_event, tier = tierFor(p, y);
       const years = Object.keys(row.events_by_year);
       return { id: hz.id, name: hz.name, window_years: hz.win, percentile: p, years_with_event: y,
-        score: y === 0 ? 0 : Math.max(1, Math.floor(p / 10)), tier: tier.label, tier_key: tier.key, group: tier.group,
+        tier: tier.label, tier_key: tier.key, group: tier.group,
         rank_line: rankLine(p, y), history_line: historyLine(y, hz.win), severity_line: SEVERITY[row.severity],
         events_total: years.reduce((s, k) => s + row.events_by_year[k], 0), events_by_year: row.events_by_year, events_by_month: row.events_by_month,
         season: peakSeason(row.events_by_month) };
@@ -234,7 +242,7 @@
     const now = new Date();
     return {
       report: { title: 'Home Hazard History', id: `EI-FL-${loc.county.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase()}-${String(Math.floor(rng(loc._addrId)() * 90000) + 10000)}`,
-        date: now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }), audience, watermark: WM, data_range: '1996–2025', real_data: !!loc._real },
+        date: now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }), audience, watermark: WM, data_range: `${FIRST_YEAR}–${END_YEAR}`, real_data: !!loc._real },
       property: { address: loc.address, city: loc.city, state: loc.state, zip: loc.zip, county: loc.county, census_tract: loc.census_tract, latitude: loc.latitude, longitude: loc.longitude, zip_area: loc.zip_area || null },
       headline: above.length ? `${join(above.map(h => h.name))} ${above.length === 1 ? 'has' : 'have'} been recorded here more often than in most of the U.S.` : 'No hazard has been recorded here more often than in most of the U.S.',
       group_counts: counts,
@@ -262,12 +270,7 @@
     });
     return s + '</svg>';
   }
-  function gauge(score, color) {
-    const arc = 'M12 52 A38 38 0 0 1 88 52';
-    return `<svg viewBox="0 0 100 62"><path d="${arc}" fill="none" stroke="#E6ECF2" stroke-width="9" stroke-linecap="round"/>` +
-      (score > 0 ? `<path d="${arc}" fill="none" stroke="${color}" stroke-width="9" stroke-linecap="round" pathLength="100" stroke-dasharray="${score * 10} 100"/>` : '') +
-      `<text x="50" y="54" text-anchor="middle" font-size="15" font-weight="700" fill="${score ? '#003366' : '#9A9A9A'}" font-family="Work Sans, Arial, sans-serif">${score}</text></svg>`;
-  }
+
   const tierColor = key => (TIERS.find(t => t.key === key) || NONE).color;
   const placeLine = d => d.property.zip ? `${d.property.address}, ${d.property.city}, FL ${d.property.zip}` : `${d.property.address}, Florida`;
   const header = d => `<div class="rp-head"><img src="img/logo.png" alt=""><div><div class="t">${esc(d.report.title)}</div><div class="a">${esc(placeLine(d))}</div></div></div>`;
@@ -279,22 +282,34 @@
     return shell(`<div class="rp-cv-top"><img src="img/logo.png" alt=""><div class="rp-cv-title"><div class="e">Emergency Insights Report</div><div class="h">Home<br>Hazard<br>History</div><div class="s">What this address has been through, from public records</div><div class="r"></div></div></div>
       <div class="rp-cv-mid"><div class="lb">${d.property.zip ? 'Property' : 'Area'}</div><div class="a1">${esc(d.property.address)}</div><div class="a2">${d.property.zip ? `${esc(d.property.city)}, FL ${esc(d.property.zip)} · ${esc(d.property.county)}` : d.property.zip_area ? 'Florida · area report by ZIP code' : 'Florida · county-level report'}</div>
       <div class="rp-cv-meta"><div><div class="l">Report date</div><div class="v">${esc(d.report.date)}</div></div><div><div class="l">Report ID</div><div class="v">${esc(d.report.id)}</div></div><div><div class="l">Prepared for</div><div class="v">${{ buying: 'Home buyer', renting: 'Renter', living: 'Resident' }[d.report.audience]}</div></div></div></div>
-      <div class="rp-cv-bot"><div class="rp-cv-facts"><div><div class="v">18</div><div class="l">Natural hazards reviewed</div></div><div><div class="v">10–30</div><div class="l">Years of records (${d.report.data_range})</div></div><div><div class="s">NOAA · FEMA · USGS</div><div class="l">Public data sources</div></div></div>
-      <div class="rp-cv-foot"><span>Scores describe how often hazards have occurred here in the past. They are not a prediction, and this is not an inspection, appraisal or insurance determination.</span><span>1</span></div></div>`);
+      <div class="rp-cv-bot"><div class="rp-cv-facts"><div><div class="v">18</div><div class="l">Natural hazards reviewed</div></div><div><div class="v">${WIN}</div><div class="l">Years of records (${d.report.data_range})</div></div><div><div class="s">NOAA · FEMA · USGS</div><div class="l">Public data sources</div></div></div>
+      <div class="rp-cv-foot"><span>This report describes how often hazards have been recorded here in the past. They are not a prediction, and this is not an inspection, appraisal or insurance determination.</span><span>1</span></div></div>`);
   }
 
   function pageSummary(d) {
-    const top = d.hazards.filter(h => h.group === 'above').slice(0, 3);
-    const cards = (top.length ? top : d.hazards.slice(0, 3)).map(h => `<div class="rp-card"><div class="nm">${h.name}</div><div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px;"><div class="tr">${h.tier}</div><div class="sc">${h.score} / 10</div></div><div class="rk">${h.rank_line}</div><div class="fx"><b>${h.history_line}</b><br><span>${h.severity_line}</span></div></div>`).join('');
     const rec = d.hazards.filter(h => h.years_with_event > 0), none = d.hazards.filter(h => h.years_with_event === 0);
-    const gauges = rec.map(h => `<div class="rp-gauge" style="--b:${tierColor(h.tier_key)}"><div class="nm">${h.name}</div>${gauge(h.score, tierColor(h.tier_key))}<div class="tr">${h.tier}</div><div class="yr">${h.years_with_event} of ${h.window_years} yrs</div></div>`).join('');
     const counts = GROUPS.map(g => `<div class="rp-count"><div class="n" style="color:${g.color}">${d.group_counts[g.key]}</div><div><div class="l" style="color:${g.color}">${g.label}</div><div class="m">${g.meaning}</div></div></div>`).join('');
-    const sw = TIERS.concat([NONE]).map(t => `<span><i style="background:${t.color}"></i>${t.label} <span style="font-weight:400;color:#707070">${t.scores}</span></span>`).join('');
+    const last = Number(Object.keys(d.hazards[0].events_by_year).slice(-1)[0]);
+    const rows = rec.map(h => {
+      const c = tierColor(h.tier_key);
+      const yrs = []; for (let y = last - h.window_years + 1; y <= last; y++) yrs.push(y);
+      const hit = yrs.filter(y => (h.events_by_year[y] || 0) > 0);
+      // one square per year, drawn as SVG so the PDF renderer places it exactly
+      const sq = Math.max(3, Math.floor((150 - 2 * (yrs.length - 1)) / yrs.length));
+      const strip = `<svg width="${yrs.length * (sq + 2) - 2}" height="7" viewBox="0 0 ${yrs.length * (sq + 2) - 2} 7" style="display:block">` +
+        yrs.map((y, k) => `<rect x="${k * (sq + 2)}" y="0" width="${sq}" height="7" rx="1" fill="${(h.events_by_year[y] || 0) > 0 ? c : '#E6EDF3'}"/>`).join('') + `</svg>`;
+      const cmp = h.percentile >= 50 ? `More often than in <b>${h.percentile}%</b> of U.S. counties` : `Less often than in <b>${100 - h.percentile}%</b> of U.S. counties`;
+      return `<tr><td class="hz"><span class="dot" style="background:${c}"></span>${h.name}</td>
+        <td class="yr"><div><b>${h.years_with_event}</b> of ${h.window_years} years</div><div class="strip">${strip}</div></td>
+        <td class="ls">${hit.length ? hit[hit.length - 1] : '—'}</td>
+        <td class="cm"><div class="bar"><span style="left:${Math.min(98, Math.max(2, h.percentile))}%;background:${c}"></span></div><div class="t">${cmp}</div></td></tr>`;
+    }).join('');
     return shell(header(d) + `<div class="rp-body"><div class="rp-eyebrow">Section 1 · At a glance</div><h1 class="rp-h1">Hazard Summary</h1><p class="rp-lead" style="font-weight:600;color:#003366;">${esc(d.headline)}</p>
-      <div class="rp-counts">${counts}</div><div class="rp-label">Hazards to plan for</div><div class="rp-top">${cards}</div>
-      <div class="rp-label">${rec.length} recorded hazards, ranked against the U.S.</div><div class="rp-grid">${gauges}</div>
-      ${none.length ? `<p class="rp-none"><b>Not recorded here</b> (${none.length} hazards): ${join(none.map(h => h.name))}.</p>` : ''}
-      <div class="rp-legend">The <b>word</b> ranks ${esc(d.property.county)} against every U.S. county for that hazard, by recorded damaging events per square mile. The <b>number</b> is the same rank out of 10. Rare hazards use 30 years of records, common ones 10. History, not a forecast.<div class="sw">${sw}</div></div></div>` + footer(d, 2));
+      <div class="rp-counts">${counts}</div>
+      <div class="rp-label">What has been recorded in ${esc(d.property.county)}</div>
+      <table class="rp-sum"><thead><tr><th>Hazard</th><th>Years with damaging events, ${FIRST_YEAR}–${END_YEAR}</th><th>Last recorded</th><th>Compared with the rest of the U.S.<div class="ends"><span>Less often</span><span>More often</span></div></th></tr></thead><tbody>${rows}</tbody></table>
+      ${none.length ? `<p class="rp-none"><b>Never recorded here</b> (${none.length} hazards): ${join(none.map(h => h.name))}.</p>` : ''}
+      <div class="rp-legend">Each square is one year, ${FIRST_YEAR} on the left; a filled square means at least one damaging event was recorded that year. The comparison ranks ${esc(d.property.county)} among all 3,144 U.S. counties by how often each hazard has been recorded. Source: NOAA Storm Events Database. This is a record of the past, not a forecast.</div></div>` + footer(d, 2));
   }
 
   function pageProperty(d) {
@@ -330,27 +345,27 @@
     const storms = d.storms.filter(s => s.hazards.includes(h.name));
     const color = tierColor(h.tier_key);
     return shell(header(d) + `<div class="rp-body"><div class="rp-eyebrow">Section 2 · Hazard detail ${i} of ${n}</div>
-      <div class="rp-titlerow"><h1 class="rp-h1" style="font-size:42px;">${h.name}</h1><div class="rp-rating"><div class="tr" style="color:${color}">${h.tier}</div><div class="sc"><b>${h.score}</b> / 10 vs. U.S. counties</div></div></div>
+      <div class="rp-titlerow"><h1 class="rp-h1" style="font-size:42px;">${h.name}</h1><div class="rp-rating"><div class="tr" style="color:${color}">${h.tier}</div><div class="sc">${h.rank_line}</div></div></div>
       <p class="rp-lead">${esc(det.what)}</p>
-      <div class="rp-facts" style="--b:${color}"><div class="rp-fact"><div class="l">National rank</div><div class="v">${h.rank_line}</div></div><div class="rp-fact"><div class="l">History</div><div class="v">${h.history_line}</div></div><div class="rp-fact"><div class="l">Peak season</div><div class="v">${h.season}</div></div><div class="rp-fact"><div class="l">Severity</div><div class="v">${h.severity_line}</div></div></div>
+      <div class="rp-facts" style="--b:${color}"><div class="rp-fact"><div class="l">Compared with the U.S.</div><div class="v">${h.rank_line}</div></div><div class="rp-fact"><div class="l">History</div><div class="v">${h.history_line}</div></div><div class="rp-fact"><div class="l">Peak season</div><div class="v">${h.season}</div></div><div class="rp-fact"><div class="l">Severity</div><div class="v">${h.severity_line}</div></div></div>
       <div class="rp-label">What has happened in ${esc(d.property.county)}</div>
       <div class="rp-charts"><div class="rp-chart"><div class="rp-chart-t">${h.events_total} damaging event${h.events_total === 1 ? '' : 's'}, ${ys[0]}–${ys[ys.length - 1]}</div><div class="rp-chart-s">Events per year</div>${yearly}</div><div class="rp-chart"><div class="rp-chart-t">Most events fall in ${h.season.split(' (')[0]}</div><div class="rp-chart-s">Events by month, all years combined</div>${monthly}</div></div>
       ${storms.length ? `<div class="rp-label">Named storms on record</div><table class="rp-events">${storms.map(s => `<tr><td>${s.date}</td><td class="n">${s.name}</td><td>${s.summary}</td></tr>`).join('')}</table>` : ''}
       <div class="rp-ins"><div class="l">Insurance</div><div class="t">${esc(det.ins)}</div></div>
       <p class="rp-bottomnote">${d.report.real_data
-        ? `Events are damaging ${h.name.toLowerCase()} events recorded for ${esc(d.property.county)} in NOAA's Storm Events Database${h.id === 'hurricane' ? ', matched to NOAA hurricane tracks passing within 100 miles' : ''}, over ${h.window_years} years. Prototype: methods are still being refined. The rating describes the past and is not a forecast.`
-        : `Events are made-up sample data for testing the layout. In the real report they come from NOAA's Storm Events Database for ${esc(d.property.county)} over ${h.window_years} years. The rating describes the past and is not a forecast.`}</p></div>` + footer(d, pageNum));
+        ? `Events are damaging ${h.name.toLowerCase()} events recorded for ${esc(d.property.county)} in NOAA's Storm Events Database${h.id === 'hurricane' ? ', matched to NOAA hurricane tracks passing within 150 miles' : ''}, ${FIRST_YEAR}–${END_YEAR}. Prototype: methods are still being refined. This describes the past and is not a forecast.`
+        : `Events are made-up sample data for testing the layout. In the real report they come from NOAA's Storm Events Database for ${esc(d.property.county)}, ${FIRST_YEAR}–${END_YEAR}. This describes the past and is not a forecast.`}</p></div>` + footer(d, pageNum));
   }
 
   function pageClosing(d, pageNum) {
-    const tiers = TIERS.map((t, k) => `<tr><td><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${t.color};margin-right:6px;"></i>${t.label}</td><td>${t.scores}</td><td>${k === 4 ? 'Recorded, but less than most counties' : `More events than ${t.min}–${k ? TIERS[k - 1].min - 1 : 100}% of U.S. counties`}</td></tr>`).join('') + `<tr><td><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${NONE.color};margin-right:6px;"></i>Not recorded</td><td>0</td><td>No damaging events in the record window</td></tr>`;
+    const tiers = TIERS.map((t, k) => `<tr><td><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${t.color};margin-right:6px;"></i>${t.label}</td><td>${k === 4 ? 'Recorded, but less often than in most counties' : `More often than in ${t.min}–${k ? TIERS[k - 1].min - 1 : 99}% of U.S. counties`}</td></tr>`).join('') + `<tr><td><i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${NONE.color};margin-right:6px;"></i>Not recorded</td><td>No damaging events since ${FIRST_YEAR}</td></tr>`;
     return `<div class="rp-page"><div class="rp-stripe"></div><div class="rp-wm">${WM}</div>${header(d)}<div class="rp-body"><div class="rp-eyebrow">Section 3 · About this report</div><h1 class="rp-h1">How This Report Works</h1>
       <p class="rp-lead">Every number comes from public government records of events that have already happened. Nothing here is a forecast.</p>
-      <div class="rp-label">How each hazard is rated</div><ul class="rp-ul"><li>Count damaging events of each hazard in the county, per square mile (10 years for common hazards, 30 for rare ones).</li><li>Rank the county against every U.S. county for that hazard only.</li><li>Turn the rank into a word and a 0–10 number. History and severity are shown beside it, never mixed in.</li></ul>
-      <div class="rp-label">What the ratings mean</div><table class="rp-tbl"><tr><th style="text-align:left">RATING</th><th style="text-align:left">NUMBER</th><th style="text-align:left">MEANING</th></tr>${tiers}</table>
+      <div class="rp-label">How each hazard is compared</div><ul class="rp-ul"><li>Count the damaging events of each hazard recorded in the county since ${FIRST_YEAR} (per square mile for local hazards such as hail and tornadoes).</li><li>Compare the county with every U.S. county, for that hazard only.</li><li>Show two plain facts side by side: how many years had events, and where the county falls among all U.S. counties. A hazard is called above the U.S. norm only if it was recorded in at least ${MIN_YEARS_ABOVE} different years. No scores, no forecasts.</li></ul>
+      <div class="rp-label">What the colors mean</div><table class="rp-tbl"><tr><th style="text-align:left">COLOR</th><th style="text-align:left">MEANING</th></tr>${tiers}</table>
       <div class="rp-label">Data sources</div><ul class="rp-ul"><li><b>NOAA Storm Events Database</b>: damaging weather events by type, date and county</li><li><b>OpenFEMA NFIP claims</b>: flood insurance claims by census tract</li><li><b>FEMA National Flood Hazard Layer</b>: the property's flood zone</li><li><b>FEMA National Risk Index</b>: the 18 hazards and a cross-check</li><li><b>USGS Earthquake Catalog</b> and <b>Census Geocoder</b></li></ul>
       <div class="rp-label">Limits</div><ul class="rp-ul"><li>Records depend on reporting, and most weather records are by county.</li><li>Flood claims count only insured homes. The past is a guide, not a guarantee.</li></ul></div>
-      <div class="rp-closing"><div class="lb">Disclaimer</div><p>This report summarizes public historical records for general information only. Ratings describe how often hazards have been recorded in the past compared with other U.S. counties; they are not predictions or guarantees. It is not an inspection, appraisal, survey or insurance quote. Emergency Insights is not affiliated with or endorsed by NOAA, FEMA, USGS or the U.S. Census Bureau.</p>
+      <div class="rp-closing"><div class="lb">Disclaimer</div><p>This report summarizes public historical records for general information only. Comparisons describe how often hazards have been recorded in the past relative to other U.S. counties; they are not predictions or guarantees. It is not an inspection, appraisal, survey or insurance quote. Emergency Insights is not affiliated with or endorsed by NOAA, FEMA, USGS or the U.S. Census Bureau.</p>
       <div class="ft"><img src="img/logo.png" alt=""><span>Report ${esc(d.report.id)} · Generated ${esc(d.report.date)}</span><span>${pageNum}</span></div></div></div>`;
   }
 

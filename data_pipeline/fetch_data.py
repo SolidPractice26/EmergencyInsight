@@ -28,7 +28,7 @@ IBTRACS = ("https://www.ncei.noaa.gov/data/international-best-track-archive-for-
 GAZETTEER = "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2024_Gazetteer/2024_Gaz_counties_national.zip"
 
 # Only the columns prepare.py uses, kept as text so nothing is silently converted.
-NOAA_COLUMNS = ["BEGIN_YEARMONTH", "EPISODE_ID", "EVENT_ID", "STATE", "STATE_FIPS", "YEAR",
+NOAA_COLUMNS = ["BEGIN_YEARMONTH", "BEGIN_DAY", "EPISODE_ID", "EVENT_ID", "STATE", "STATE_FIPS", "YEAR",
                 "MONTH_NAME", "EVENT_TYPE", "CZ_TYPE", "CZ_FIPS", "CZ_NAME",
                 "INJURIES_DIRECT", "DEATHS_DIRECT", "DAMAGE_PROPERTY", "DAMAGE_CROPS"]
 

@@ -143,6 +143,12 @@ td:first-child { color: var(--ink); font-weight: 600; }
 .preview .item { background: rgba(255,255,255,0.08); border-radius: 10px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .preview .item b { font-size: 18px; }
 [hidden] { display: none !important; }
+.addr-grid { border: 0; padding: 0; margin: 0; display: grid; grid-template-columns: 2fr 1.2fr 1fr 0.8fr; gap: 12px; }
+.addr-grid .f { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.addr-grid label { font-size: 14px; font-weight: 600; color: var(--navy); }
+.addr-grid input, .addr-grid select { height: 50px; width: 100%; border: 1.5px solid #c3d3e1; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 16px; color: var(--ink); background: var(--white); }
+.addr-grid input:focus, .addr-grid select:focus { outline: 3px solid rgba(0,51,102,0.25); border-color: var(--navy); }
+@media (max-width: 720px) { .addr-grid { grid-template-columns: 1fr 1fr; } .addr-grid .street { grid-column: 1 / -1; } }
 .proto-bar { background: #fff6e5; color: #5a4210; font-size: 14px; padding: 8px 0; border-bottom: 1px solid #f0dfbd; }
 .notice { background: #fff6e5; color: #5a4210; border-radius: 10px; padding: 14px 16px; font-size: 15px; }
 
@@ -244,6 +250,22 @@ td:first-child { color: var(--ink); font-weight: 600; }
 .rp-gauge .tr { font-size: 10px; font-weight: 700; margin-top: 2px; }
 .rp-gauge .yr { font-size: 8.5px; color: #707070; }
 .rp-gauge svg { width: 100%; height: auto; display: block; }
+.rp-sum { width: 100%; border-collapse: collapse; font-size: 11px; color: #1F2A36; }
+.rp-sum th { text-align: left; font-size: 8.5px; font-weight: 700; color: #707070; text-transform: uppercase; letter-spacing: 0.08em; padding: 0 8px 6px 0; vertical-align: bottom; }
+.rp-sum th:last-child { width: 36%; }
+.rp-sum .ends { display: flex; justify-content: space-between; font-weight: 400; text-transform: none; letter-spacing: 0; margin-top: 3px; }
+.rp-sum td { padding: 7px 8px 7px 0; border-top: 1px solid #E6EDF3; vertical-align: top; line-height: 16px; }
+.rp-sum td.hz, .rp-sum td.ls { padding-top: 9px; }
+.rp-sum .hz { font-weight: 700; color: #003366; white-space: nowrap; }
+.rp-sum .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; vertical-align: -1px; }
+.rp-sum .yr b { font-size: 13px; line-height: 16px; color: #003366; }
+.rp-sum .yr > div:first-child { height: 17px; }
+.rp-sum .strip { margin-top: 9px; height: 7px; }
+.rp-sum .ls { color: #3D4A57; }
+.rp-sum .bar { position: relative; margin-top: 5px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #DCE8F2, #F3E3C8 55%, #F2C4BE); }
+.rp-sum .bar span { position: absolute; top: -3px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.15); }
+.rp-sum .cm .t { font-size: 10px; color: #3D4A57; margin-top: 5px; }
+.rp-sum .cm .t b { color: #003366; }
 .rp-none { font-size: 11px; color: #707070; margin-top: 10px; }
 .rp-none b { color: #003366; }
 .rp-legend { margin-top: auto; margin-bottom: 16px; padding: 12px 14px; background: #F4F7FA; border-radius: 5px; font-size: 11px; color: #3D4A57; line-height: 1.5; }
@@ -352,12 +374,11 @@ td:first-child { color: var(--ink); font-weight: 600; }
       <a href="#pros">For professionals</a>
       <a href="#story">Our story</a>
       <a href="#faq">FAQ</a>
-      <a href="#lab">Test lab</a>
       <a class="btn btn-steel" href="#report">Get a report</a>
     </nav>
   </div>
 </header>
-<div class="proto-bar"><div class="wrap"><b>Prototype.</b> Florida only. Reports use real NOAA storm records (1996–2025); flood zones are shown for test addresses only.</div></div>
+<div class="proto-bar"><div class="wrap"><b>Prototype.</b> Florida only. Reports use real NOAA storm records (2016–2025); flood zones are shown for test addresses only.</div></div>
 
 <main>
 
@@ -370,8 +391,8 @@ td:first-child { color: var(--ink); font-weight: 600; }
         <h1 class="h1">Know what your home has been through.</h1>
         <p class="lead">Thinking of buying, about to rent, or living there for years: enter an address and get a plain-English report of every natural hazard recorded there — hurricanes, floods, wind and 15 more — compared with the rest of the U.S.</p>
         <form class="search js-search">
-          <label class="sr" for="addr-home">Property address</label>
-          <input id="addr-home" type="text" placeholder="Enter an address or ZIP code" autocomplete="street-address">
+          <label class="sr" for="addr-home">ZIP code or full address</label>
+          <input id="addr-home" type="text" placeholder="ZIP code or full address" autocomplete="street-address">
           <button class="btn btn-steel" type="submit">See the report</button>
         </form>
         <p class="small">History, not a forecast. Built on public NOAA and FEMA records.</p>
@@ -406,7 +427,7 @@ td:first-child { color: var(--ink); font-weight: 600; }
         <div class="stack">
           <img class="shot" src="img/page2.jpg" alt="Hazard summary page of a sample report">
           <h3 class="h3">Hazard summary</h3>
-          <p>All 18 FEMA hazards ranked against every U.S. county, with the ones that stand out up front.</p>
+          <p>All 18 FEMA hazards: how often each was recorded here, and how that compares with the rest of the U.S.</p>
         </div>
         <div class="stack">
           <img class="shot" src="img/page3.jpg" alt="Property page of a sample report showing flood zone and flood claims">
@@ -414,9 +435,9 @@ td:first-child { color: var(--ink); font-weight: 600; }
           <p>The home's FEMA flood zone, flood claims nearby, major storms on record, and what to check.</p>
         </div>
         <div class="stack">
-          <img class="shot" src="img/page4.jpg" alt="Hurricane detail page of a sample report">
+          <img class="shot" src="img/page4.jpg" alt="Lightning detail page of a sample report">
           <h3 class="h3">Hazard details</h3>
-          <p>For each hazard that stands out: when it happens, how severe it gets, and its full record.</p>
+          <p>For each hazard that stands out: how often it was recorded, when it tends to hit, and its full record.</p>
         </div>
       </div>
       <div class="row"><a class="btn btn-primary" href="#sample">See the full sample report</a></div>
@@ -438,14 +459,14 @@ td:first-child { color: var(--ink); font-weight: 600; }
         <div class="split" style="align-items: center;">
           <div class="stack">
             <p class="eyebrow">History, not a forecast</p>
-            <h3 class="h2" style="font-size: clamp(26px, 3vw, 32px);">Every rating compares one place with the whole country, one hazard at a time.</h3>
+            <h3 class="h2" style="font-size: clamp(26px, 3vw, 32px);">Every hazard compares one place with the whole country, one hazard at a time.</h3>
             <p class="lead" style="font-size: 17px;">Hurricanes are compared with hurricanes, floods with floods. We never turn the past into a probability.</p>
           </div>
           <div class="example">
             <p class="eyebrow">Example</p>
-            <div class="top"><b style="font-size: 22px; color: var(--navy);">Hurricane</b><span class="tier" style="color: var(--t-very-high);">Very high <small style="font-family: var(--text); font-size: 16px; color: var(--muted);">9/10</small></span></div>
-            <p>More recorded hurricane events than 94% of U.S. counties over 30 years.</p>
-            <p style="font-weight: 600;">It does not mean a 90% chance of a hurricane next year.</p>
+            <div class="top"><b style="font-size: 22px; color: var(--navy);">Hurricane</b><span class="tier" style="color: var(--t-very-high);">3 of 10 years</span></div>
+            <p>Damaging hurricanes were recorded in 3 of the last 10 years, more often than in 89% of U.S. counties.</p>
+            <p style="font-weight: 600;">It does not mean a 30% chance of a hurricane next year.</p>
           </div>
         </div>
       </div>
@@ -479,9 +500,14 @@ td:first-child { color: var(--ink); font-weight: 600; }
           <p class="lead">Enter the address, then tell us whether you're buying, renting, or already living there. The report changes to fit.</p>
         </div>
         <form class="stack js-search" style="max-width: 640px;">
-          <label class="h3" for="addr-report" style="font-size: 17px;">Property address</label>
-          <div class="search on-light"><input id="addr-report" type="text" placeholder="400 S Orange Ave, Orlando, FL 32801" autocomplete="street-address"></div>
-          <p class="small">During the prototype, include the ZIP code. A ZIP code by itself works too.</p>
+          <fieldset class="addr-grid">
+            <legend class="h3" style="font-size: 17px; margin-bottom: 8px;">Property address</legend>
+            <div class="f street"><label for="addr-street">Street address</label><input id="addr-street" type="text" placeholder="400 S Orange Ave" autocomplete="address-line1"></div>
+            <div class="f city"><label for="addr-city">City</label><input id="addr-city" type="text" placeholder="Orlando" autocomplete="address-level2"></div>
+            <div class="f state"><label for="addr-state">State</label><select id="addr-state" autocomplete="address-level1"><option value="FL" selected>Florida</option><optgroup label="Coming soon"><option disabled>Alabama</option><option disabled>Alaska</option><option disabled>Arizona</option><option disabled>Arkansas</option><option disabled>California</option><option disabled>Colorado</option><option disabled>Connecticut</option><option disabled>Delaware</option><option disabled>District of Columbia</option><option disabled>Georgia</option><option disabled>Hawaii</option><option disabled>Idaho</option><option disabled>Illinois</option><option disabled>Indiana</option><option disabled>Iowa</option><option disabled>Kansas</option><option disabled>Kentucky</option><option disabled>Louisiana</option><option disabled>Maine</option><option disabled>Maryland</option><option disabled>Massachusetts</option><option disabled>Michigan</option><option disabled>Minnesota</option><option disabled>Mississippi</option><option disabled>Missouri</option><option disabled>Montana</option><option disabled>Nebraska</option><option disabled>Nevada</option><option disabled>New Hampshire</option><option disabled>New Jersey</option><option disabled>New Mexico</option><option disabled>New York</option><option disabled>North Carolina</option><option disabled>North Dakota</option><option disabled>Ohio</option><option disabled>Oklahoma</option><option disabled>Oregon</option><option disabled>Pennsylvania</option><option disabled>Rhode Island</option><option disabled>South Carolina</option><option disabled>South Dakota</option><option disabled>Tennessee</option><option disabled>Texas</option><option disabled>Utah</option><option disabled>Vermont</option><option disabled>Virginia</option><option disabled>Washington</option><option disabled>West Virginia</option><option disabled>Wisconsin</option><option disabled>Wyoming</option></optgroup></select></div>
+            <div class="f zip"><label for="addr-zip">ZIP code</label><input id="addr-zip" type="text" inputmode="numeric" maxlength="5" placeholder="32801" autocomplete="postal-code"></div>
+          </fieldset>
+          <p class="small">Florida only for now. The ZIP code is required; street and city let us match our test addresses, which also get their FEMA flood zone.</p>
           <p class="small" id="flow-err" aria-live="polite" style="color: #9b2c20;"></p>
           <fieldset style="border: 0; padding: 0; margin: 8px 0 0;">
             <legend class="h3" style="font-size: 17px; margin-bottom: 8px;">This report is for someone who is…</legend>
@@ -545,17 +571,17 @@ td:first-child { color: var(--ink); font-weight: 600; }
     <div class="wrap stack-lg">
       <div class="stack">
         <p class="eyebrow">Sample report</p>
-        <h1 class="h2">Every page of a real report, for a sample address.</h1>
-        <p class="lead">This is the report for a fictional home in Orlando, Florida. The storm names and dates are real; the counts and ratings are sample data while we finish the live version.</p>
+        <h1 class="h2">Every page of a real report.</h1>
+        <p class="lead">This is the real report for Orlando City Hall (400 S Orange Ave), built from NOAA records for Orange County, 2016–2025.</p>
       </div>
       <div class="pages">
         <figure><img class="shot" src="img/page1.jpg" alt="Cover page"><figcaption><b>1 · Cover</b>The address, report date and data sources.</figcaption></figure>
-        <figure><img class="shot" src="img/page2.jpg" alt="Hazard summary page"><figcaption><b>2 · Hazard summary</b>All 18 hazards, ranked against every U.S. county.</figcaption></figure>
+        <figure><img class="shot" src="img/page2.jpg" alt="Hazard summary page"><figcaption><b>2 · Hazard summary</b>All 18 hazards: how often each was recorded, and how that compares with the rest of the U.S.</figcaption></figure>
         <figure><img class="shot" src="img/page3.jpg" alt="Property page"><figcaption><b>3 · This property</b>Flood zone, flood claims nearby, storms on record and a checklist.</figcaption></figure>
-        <figure><img class="shot" src="img/page4.jpg" alt="Hurricane detail page"><figcaption><b>4 · Hurricane</b>When it hits, how often, and the named storms.</figcaption></figure>
-        <figure><img class="shot" src="img/page5.jpg" alt="Riverine flooding detail page"><figcaption><b>5 · Riverine Flooding</b>One page for each hazard that stands out.</figcaption></figure>
-        <figure><img class="shot" src="img/page6.jpg" alt="Strong wind detail page"><figcaption><b>6 · Strong Wind</b>Same layout, so every hazard reads the same way.</figcaption></figure>
-        <figure><img class="shot" src="img/page7.jpg" alt="How this report works page"><figcaption><b>7 · How this report works</b>The rating method, data sources and limits.</figcaption></figure>
+        <figure><img class="shot" src="img/page4.jpg" alt="Lightning detail page"><figcaption><b>4 · Lightning</b>How often it was recorded, when it tends to hit, and what insurance usually covers.</figcaption></figure>
+        <figure><img class="shot" src="img/page5.jpg" alt="Hurricane detail page"><figcaption><b>5 · Hurricane</b>One page for each hazard that stands out, with the named storms.</figcaption></figure>
+        <figure><img class="shot" src="img/page6.jpg" alt="Tornado detail page"><figcaption><b>6 · Tornado</b>Same layout, so every hazard reads the same way.</figcaption></figure>
+        <figure><img class="shot" src="img/page7.jpg" alt="How this report works page"><figcaption><b>7 · How this report works</b>How each hazard is compared, data sources and limits.</figcaption></figure>
       </div>
     </div>
   </div>
@@ -735,7 +761,7 @@ td:first-child { color: var(--ink); font-weight: 600; }
           <label class="btn btn-outline" style="font-weight: 600;"><input type="radio" name="lab-mode" id="lab-mode-real" value="real" checked style="margin-right: 8px;">Real Florida data (prototype)</label>
           <label class="btn btn-outline" style="font-weight: 600;"><input type="radio" name="lab-mode" id="lab-mode-fake" value="fake" style="margin-right: 8px;">Made-up test data</label>
         </div>
-        <p class="small" id="lab-mode-note" style="margin-top: 10px;">Real NOAA storm records (1996–2025) and NOAA hurricane tracks for all 67 Florida counties, ranked against every U.S. county. Flood insurance claims and earthquakes are not connected yet.</p>
+        <p class="small" id="lab-mode-note" style="margin-top: 10px;">Real NOAA storm records (2016–2025) and NOAA hurricane tracks for all 67 Florida counties, ranked against every U.S. county. Flood insurance claims and earthquakes are not connected yet.</p>
       </fieldset>
 
       <form class="lab-controls" id="lab-form">
@@ -817,7 +843,6 @@ td:first-child { color: var(--ink); font-weight: 600; }
         <a href="#faq">FAQ</a>
         <a href="#contact">Contact</a>
         <a href="#legal">Privacy and terms</a>
-        <a href="#lab">Test lab</a>
       </nav>
     </div>
     <p class="disclaimer">Reports summarize public historical records for general information only. Ratings are not predictions, and reports are not inspections, appraisals or insurance quotes. Emergency Insights is not affiliated with or endorsed by NOAA, FEMA, USGS or NASA.</p>

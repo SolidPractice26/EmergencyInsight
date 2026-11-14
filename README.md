@@ -3,12 +3,12 @@
 Emergency Insights turns public weather and disaster records for an address into a plain-English hazard history report (PDF).
 The report is for people buying, renting or already living in a home.
 
-It shows **what has happened**, not what will happen. Each hazard gets:
-- a rating word (Very high to Very low), with a supporting score from 0 to 10;
-- a history line, such as "Recorded in 7 of the last 10 years";
-- a severity flag, based on the typical damage per event.
+It shows **what has happened**, not what will happen, and leaves the interpretation to the reader. Each hazard gets two plain facts:
+- how many years had damaging events since 2016 (for example "3 of 10 years"), with one square per year;
+- how often it was recorded here compared with every U.S. county (for example "more often than in 89% of U.S. counties").
 
-Ratings compare the county with every U.S. county.
+There are no scores. Every hazard uses the same window, starting in 2016; the start year stays fixed, so the window grows by one year with each yearly update.
+A hazard is called "above the U.S. norm" only if it was recorded in at least 3 different years.
 
 > Status: private prototype. The Florida data is real. Report generation runs on demand.
 > See "Known limits" before trusting any single number.
@@ -41,9 +41,8 @@ After that, each report is a quick lookup plus filling in a fixed template, with
 |---|---|
 | `data_pipeline/` | `fetch_data.py` downloads the raw records. `prepare.py` turns them into ratings. All the rules (which NOAA event counts as which hazard, how hurricanes are matched, and so on) are written at the top of `prepare.py` in plain language. |
 | `data/processed/` | The output: ratings for all 3,144 U.S. counties (`county_ratings.csv`), the Florida slice the website uses (`florida_db.json`), 10 test addresses with their real flood zones (`fl_addresses.json`), and a Florida ZIP code → county table (`fl_zips.json`, from the Census ZIP-county relationship file; a ZIP that spans counties uses the one with the most land). |
-| `report_generator/` | `render.py` fills the HTML templates in `templates/` with a report data file and prints them to PDF. `data/hazards.json` holds the hazard wording, and `data/audiences.json` holds the buyer, renter and resident checklists. |
-| `website/` | The prototype website, including the Test lab that builds reports in the browser from `florida_db.json`. |
-| `deploy/ei/` | The same website as a normal stand-alone page, ready to copy into the portfolio site as `javierarocha.me/ei`. |
+| `report_generator/` | *(Out of date: still uses the old 0–10 scores. The browser version in `deploy/ei/lab.js` is current.)*  `render.py` fills the HTML templates in `templates/` with a report data file and prints them to PDF. `data/hazards.json` holds the hazard wording, and `data/audiences.json` holds the buyer, renter and resident checklists. |
+| `deploy/ei/` | **The website** (the one source for it), published at `javierarocha.me/ei`. `index.html` is the page, `site.js` runs the site, `lab.js` builds reports and PDFs in the browser from `data/florida_db.json`. The Test lab is at `#lab` (not in the menu). The earlier claude.ai artifact copy is frozen and no longer updated. |
 | `docs/` | A sample report. |
 
 ## Running it
@@ -55,7 +54,7 @@ Requires Python 3.10+.
 pip install -r data_pipeline/requirements.txt
 python data_pipeline/fetch_data.py raw
 python data_pipeline/prepare.py raw/noaa_all.parquet raw/ibtracs_NA.csv raw/2024_Gaz_counties_national.txt data/processed
-cp data/processed/florida_db.json website/data/
+cp data/processed/florida_db.json deploy/ei/data/
 
 # 2. Build the sample report
 pip install -r report_generator/requirements.txt
@@ -67,7 +66,7 @@ Raw downloads (`raw/`) are not stored in the repository. They can always be down
 
 ## Data sources (all U.S. public domain)
 
-- **NOAA Storm Events Database, 1996–2025.** About 1.8 million records of damaging and notable weather.
+- **NOAA Storm Events Database.** Downloaded from 1996; the report uses 2016–2025.
 - **NOAA IBTrACS.** Hurricane and tropical storm tracks, used to tell which storm caused which records.
 - **U.S. Census Gazetteer.** County land area and center points.
 - **U.S. Census Geocoder.** Address → county.
@@ -76,9 +75,8 @@ Raw downloads (`raw/`) are not stored in the repository. They can always be down
 
 ## Known limits (to fix later)
 
-- **Same-month storms:** two storms in the same month are merged (for example, Jeanne 2004 is missing for some counties).
 - **Tornadoes:** counts favor places with more spotters. Weighting by EF scale would help.
-- **Rare hazards:** a single event can push a county high.
+- **Rare hazards:** one or two events can rank a county high; the 3-year rule keeps these out of the headline, but the comparison still shows them.
 - **Zone records:** about 17.5% of NOAA "zone" records are not yet matched to a county nationally. The NWS zone–county file fixes this.
 - **Severity:** the flag is rough (median damage per event).
 - **Not yet included:** FEMA flood insurance claims and USGS earthquakes.
