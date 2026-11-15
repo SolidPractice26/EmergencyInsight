@@ -87,7 +87,8 @@
     const list = (above.length ? above : data.hazards.filter(h => !h.not_included && h.years_with_event > 0).slice(0, 3)).slice(0, 5);
     document.getElementById('flow-items').innerHTML = list.map(h =>
       `<div class="item"><b>${esc2(h.name)}</b><span style="text-align: right;"><span style="font-weight: 700;">${h.years_with_event} of ${h.window_years} years</span><small style="display: block; font-size: 13px; color: var(--on-navy-muted);"><i style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${tierTint[h.tier_key] || '#a9cbe6'}; margin-right: 6px;"></i>more often than ${h.percentile}% of U.S. counties</small></span></div>`).join('');
-    document.getElementById('flow-foot').textContent = `Real NOAA records for ${loc.county}, 2016–2025, compared with every U.S. county.`;
+    const nDecl = (data.declarations || []).length;
+    document.getElementById('flow-foot').textContent = `Real NOAA records for ${loc.county}, 2016–2025, compared with every U.S. county. ${nDecl ? `Plus every federal disaster declared for the county since 2016 (${nDecl} FEMA declaration${nDecl === 1 ? '' : 's'}).` : 'No federal disaster declarations since 2016.'}`;
     document.getElementById('aud-line').innerHTML = audLines[aud];
     flowPdfStatus.textContent = '';
     const pv = document.getElementById('flow-preview-pages');

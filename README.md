@@ -55,6 +55,7 @@ pip install -r data_pipeline/requirements.txt
 python data_pipeline/fetch_data.py raw
 python data_pipeline/prepare.py raw/noaa_all.parquet raw/ibtracs_NA.csv raw/2024_Gaz_counties_national.txt data/processed
 python data_pipeline/build_zips.py raw/zcta_county.txt raw/2024_Gaz_counties_national.txt data/processed
+python data_pipeline/build_declarations.py raw/fema_declarations.csv data/processed
 cp -r data/processed/states data/processed/zips deploy/ei/data/
 
 # 2. Build the sample report
@@ -70,6 +71,7 @@ Raw downloads (`raw/`) are not stored in the repository. They can always be down
 - **NOAA Storm Events Database.** Downloaded from 1996; the report uses 2016–2025.
 - **NOAA IBTrACS.** Hurricane and tropical storm tracks, used to tell which storm caused which records.
 - **U.S. Census Gazetteer.** County land area and center points.
+- **OpenFEMA Disaster Declarations.** Every federal disaster, emergency and fire declaration by county (natural hazards only, 2016–2025), shown on page 3.
 - **U.S. Census Geocoder.** Address → county.
 - **U.S. Census ZCTA–county relationship file (2020).** ZIP code → county.
 - **FEMA National Flood Hazard Layer.** Address → flood zone.

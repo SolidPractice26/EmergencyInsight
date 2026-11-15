@@ -261,7 +261,8 @@
       flood_claims: claimsInfo,
       property_lead: lead,
       page3: { title: aud.title, checklist_title: aud.checkTitle, checklist },
-      storms: db.storms.map(s => ({ date: s.date, name: s.name, hazards: s.hazards, summary: s.summary }))
+      storms: db.storms.map(s => ({ date: s.date, name: s.name, hazards: s.hazards, summary: s.summary })),
+      declarations: db.declarations ? db.declarations.map(([code, date, title, type, sw, begin]) => ({ code, date, title, type, statewide: !!sw, begin: begin || date })) : null
     };
   }
 
@@ -330,8 +331,32 @@
       const chart = barChart(ys, vs, 600, 72, { tick: (i, y) => Number(y) % 5 === 0 || i === 0 || i === ys.length - 1 });
       claimsHtml = `<div class="rp-chart"><div style="display:flex;justify-content:space-between;gap:10px;"><div class="rp-chart-t">${fc.total} claims in ${fc.years_with_claims} of ${ys.length} years</div><div class="rp-chart-s">Claims per year, this census tract</div></div>${chart}<div class="rp-note">Source: FEMA National Flood Insurance Program. Counts only insured homes.</div></div>`;
     } else {
-      claimsHtml = `<div class="rp-legend" style="margin: 0;">Flood insurance claims for this census tract will appear here once FEMA's claims data is connected.</div>`;
+      claimsHtml = '';
     }
+    // Federal disaster declarations (OpenFEMA), natural hazards only
+    const dc = d.declarations;
+    const kind = c => ({ DR: 'Major disaster', EM: 'Emergency', FM: 'Fire management' }[c.slice(0, 2)] || c.slice(0, 2));
+    const mon = x => { const [y, m] = x.split('-'); return `${MONTHS[Number(m) - 1]} ${y}`; };
+    const nDR = dc ? dc.filter(x => x.code.startsWith('DR')).length : 0;
+    // one row per disaster: FEMA often issues an emergency and a major disaster declaration for the same storm
+    const groups = [];
+    (dc || []).forEach(x => {
+      // same incident = same start date and type (e.g. "Tropical Storm Debby" emergency + "Hurricane Debby" major disaster)
+      const storm = /hurricane|tropical|typhoon/i.test(x.type + ' ' + x.title);
+      const name = x.title.toLowerCase().replace(/\b(remnants of|post-tropical cyclone|hurricane|tropical storms?|tropical depression|typhoon|and flooding)\b/g, '').replace(/[^a-z ]/g, '').trim();
+      const key = storm && name ? `storm|${name}|${x.begin.slice(0, 4)}` : x.begin + '|' + x.type;
+      let g = groups.find(g => g.key === key);
+      if (!g) groups.push(g = { key, title: x.title, date: x.date, items: [] });
+      g.items.push(x); if (x.date < g.date) g.date = x.date;
+      if (x.code.startsWith('DR')) g.title = x.title;
+    });
+    const kinds = g => [...new Set(g.items.map(x => kind(x.code)))].join(' · ') + (g.items.every(x => x.statewide) ? ' · statewide' : '');
+    const MAXD = 7;
+    const declHtml = !dc ? '' : groups.length
+      ? `<table class="rp-events rp-decl">${groups.slice(0, MAXD).map(g => `<tr><td>${mon(g.date)}</td><td class="n">${esc(g.title)}</td><td class="h">${kinds(g)}</td><td class="c">${g.items.map(x => x.code).join(', ')}</td></tr>`).join('')}</table>${groups.length > MAXD ? `<p class="rp-none" style="margin-top:4px">And ${groups.length - MAXD} more, ${mon(groups[groups.length - 1].date)} to ${mon(groups[MAXD].date)}.</p>` : ''}`
+      : `<p class="rp-none" style="margin-top:0">No federal disaster declarations for natural hazards covered ${esc(d.property.county)} from ${FIRST_YEAR} to ${END_YEAR}.</p>`;
+    const declTx = !dc ? '' : !dc.length ? 'None for natural hazards in this period.'
+      : `${dc.length} declaration${dc.length === 1 ? '' : 's'} in all${nDR ? `, including ${nDR} major disaster declaration${nDR === 1 ? '' : 's'}` : ''}. Source: FEMA.`;
     const fz = d.flood_zone;
     const zoneColor = fz ? { high: '#F2A29A', moderate: '#F5C08A', low: '#7BAFD4' }[fz.level] : '#7BAFD4';
     const zoneHtml = fz
@@ -340,9 +365,11 @@
     const rows = d.storms.map(s => `<tr><td>${s.date}</td><td class="n">${s.name}</td><td class="h">${s.hazards.join(' · ')}</td><td>${s.summary}</td></tr>`).join('');
     const checks = d.page3.checklist.map(c => `<div class="rp-check"><i></i><div><b>${esc(c.bold)}</b> ${esc(c.text)}</div></div>`).join('');
     return shell(header(d) + `<div class="rp-body"><div class="rp-eyebrow">Section 1 · This property</div><h1 class="rp-h1">${esc(d.page3.title)}</h1><p class="rp-lead">${esc(d.property_lead)}</p>
-      <div class="rp-duo"><div class="rp-map"><div><div class="pin"></div>Satellite view of the property<br>will appear here</div><div class="co">${d.property.latitude.toFixed(4)}, ${d.property.longitude.toFixed(4)}${d.property.census_tract ? ' · Tract ' + d.property.census_tract : ' · county center'}</div></div>
-      <div class="rp-zone"><div class="lb">FEMA flood zone</div>${zoneHtml}</div></div>
-      <div class="rp-label">Flood insurance claims nearby</div>${claimsHtml}
+      ${!fz && dc ? `<div class="rp-duo"><div class="rp-stat"><div class="lb">Federally declared disasters, ${FIRST_YEAR}–${END_YEAR}</div><div class="big">${groups.length}</div><div class="tx">${declTx}</div></div>
+      <div class="rp-zone"><div class="lb">FEMA flood zone</div><div class="row"><div class="tt" style="color:#7BAFD4">Mapped for each property</div></div><div class="tx">Flood zones change from street to street, so this area report doesn't show one. Look up the home's zone at msc.fema.gov.</div></div></div>` : `<div class="rp-duo"><div class="rp-map"><div><div class="pin"></div>Satellite view of the property<br>will appear here</div><div class="co">${d.property.latitude.toFixed(4)}, ${d.property.longitude.toFixed(4)}${d.property.census_tract ? ' · Tract ' + d.property.census_tract : ' · county center'}</div></div>
+      <div class="rp-zone"><div class="lb">FEMA flood zone</div>${zoneHtml}</div></div>`}
+      ${claimsHtml ? `<div class="rp-label">Flood insurance claims nearby</div>${claimsHtml}` : ''}
+      ${dc ? `<div class="rp-label">Federal disaster declarations in ${esc(d.property.county)}</div>${declHtml}` : ''}
       <div class="rp-label">Major storms on record in ${esc(d.property.county)}</div>${rows ? `<table class="rp-events">${rows}</table>` : `<p class="rp-none" style="margin-top:0">No named tropical storm left recorded damage in the county since ${FIRST_YEAR}.</p>`}
       <div class="rp-label">${esc(d.page3.checklist_title)}</div><div class="rp-checks">${checks}</div></div>` + footer(d, 3));
   }
@@ -373,7 +400,7 @@
       <p class="rp-lead">Every number comes from public government records of events that have already happened. Nothing here is a forecast.</p>
       <div class="rp-label">How each hazard is compared</div><ul class="rp-ul"><li>Count the events of each hazard NOAA recorded in the county since ${FIRST_YEAR} (for most hazards, those that caused damage, injury or death; a hurricane counts once per storm) (per square mile for local hazards such as hail and tornadoes).</li><li>Compare the county with every U.S. county, for that hazard only.</li><li>Show two plain facts side by side: how many years had events, and where the county falls among all U.S. counties. A hazard is called above the U.S. norm only if it was recorded in at least ${MIN_YEARS_ABOVE} different years. No scores, no forecasts.</li></ul>
       <div class="rp-label">What the colors mean</div><table class="rp-tbl"><tr><th style="text-align:left">COLOR</th><th style="text-align:left">MEANING</th></tr>${tiers}</table>
-      <div class="rp-label">Data sources</div><ul class="rp-ul"><li><b>NOAA Storm Events Database</b>: damaging weather events by type, date and county</li><li><b>OpenFEMA NFIP claims</b>: flood insurance claims by census tract</li><li><b>FEMA National Flood Hazard Layer</b>: the property's flood zone</li><li><b>FEMA National Risk Index</b>: the 18 hazards and a cross-check</li><li><b>USGS Earthquake Catalog</b> and <b>Census Geocoder</b></li></ul>
+      <div class="rp-label">Data sources</div><ul class="rp-ul"><li><b>NOAA Storm Events Database</b>: damaging weather events by type, date and county</li><li><b>OpenFEMA Disaster Declarations</b>: federal disaster and emergency declarations by county</li><li><b>OpenFEMA NFIP claims</b>: flood insurance claims by census tract</li><li><b>FEMA National Flood Hazard Layer</b>: the property's flood zone</li><li><b>FEMA National Risk Index</b>: the 18 hazards and a cross-check</li><li><b>USGS Earthquake Catalog</b> and <b>Census Geocoder</b></li></ul>
       <div class="rp-label">Limits</div><ul class="rp-ul"><li>Records depend on reporting, and most weather records are by county.</li><li>Flood claims count only insured homes. The past is a guide, not a guarantee.</li></ul></div>
       <div class="rp-closing"><div class="lb">Disclaimer</div><p>This report summarizes public historical records for general information only. Comparisons describe how often hazards have been recorded in the past relative to other U.S. counties; they are not predictions or guarantees. It is not an inspection, appraisal, survey or insurance quote. Emergency Insights is not affiliated with or endorsed by NOAA, FEMA, USGS or the U.S. Census Bureau.</p>
       <div class="ft"><img src="img/logo.png" alt=""><span>Report ${esc(d.report.id)} · Generated ${esc(d.report.date)}</span><span>${pageNum}</span></div></div></div>`;
@@ -450,7 +477,7 @@
     const rows = HAZARDS.map(hz => { const v = c.h[hz.id]; return { hazard: hz.id, national_percentile: v[0], years_with_event: v[1], severity: v[2], events_by_year: v[3], events_by_month: v[4] }; });
     const storms = c.storms.map(st => ({ date: `${MONTHS[st.month - 1]} ${st.year}`, name: st.name, hazards: ['Hurricane'],
       summary: `NOAA recorded ${money(st.damage)} in damage in the county.`, year: st.year, month: st.month - 1 }));
-    return { source: 'states/XX.json: real NOAA Storm Events and hurricane tracks, ranked against every U.S. county', county_rows: rows, tract_flood_claims: null, storms };
+    return { source: 'states/XX.json: real NOAA Storm Events and hurricane tracks, ranked against every U.S. county', county_rows: rows, tract_flood_claims: null, storms, declarations: c.decl || [] };
   }
 
   // ---- UI ----

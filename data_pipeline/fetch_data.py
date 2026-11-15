@@ -7,6 +7,7 @@ Downloads (into <raw_dir>):
   Census Gazetteer county list (land area, center point) -> 2024_Gaz_counties_national.txt
   2020 county list (Connecticut's old counties)          -> 2020_Gaz_counties_national.txt
   Census ZIP code to county table                        -> zcta_county.txt
+  FEMA disaster declarations (OpenFEMA)                  -> fema_declarations.csv
 Then combines the yearly NOAA files into one table      -> noaa_all.parquet
 
 Run:  python fetch_data.py <raw_dir> [first_year] [last_year]
@@ -29,6 +30,7 @@ IBTRACS = ("https://www.ncei.noaa.gov/data/international-best-track-archive-for-
            "v04r01/access/csv/ibtracs.NA.list.v04r01.csv")
 GAZETTEER = "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2024_Gazetteer/2024_Gaz_counties_national.zip"
 GAZETTEER_2020 = "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2020_Gazetteer/2020_Gaz_counties_national.zip"
+DECLARATIONS = "https://www.fema.gov/api/open/v2/DisasterDeclarationsSummaries.csv"
 ZCTA_COUNTY = "https://www2.census.gov/geo/docs/maps-data/data/rel2020/zcta520/tab20_zcta520_county20_natl.txt"
 
 # Only the columns prepare.py uses, kept as text so nothing is silently converted.
@@ -89,6 +91,10 @@ def main(raw_dir, first_year=1996, last_year=2025):
     path = raw / "zcta_county.txt"
     if not path.exists():
         path.write_bytes(get(ZCTA_COUNTY))
+
+    path = raw / "fema_declarations.csv"
+    if not path.exists():
+        path.write_bytes(get(DECLARATIONS))
 
     print("Done. Next:  python prepare.py", raw / "noaa_all.parquet", raw / "ibtracs_NA.csv",
           raw / "2024_Gaz_counties_national.txt", "<out_dir>")
