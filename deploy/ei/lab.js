@@ -310,7 +310,7 @@
         yrs.map((y, k) => `<rect x="${k * (sq + 2)}" y="0" width="${sq}" height="7" rx="1" fill="${(h.events_by_year[y] || 0) > 0 ? '#3D6A93' : '#E6EDF3'}"/>`).join('') + `</svg>`;
       const cmp = h.percentile >= 50 ? `More often than in <b>${h.percentile}%</b> of U.S. counties` : `Less often than in <b>${100 - h.percentile}%</b> of U.S. counties`;
       return `<tr><td class="hz"><span class="dot" style="background:${c}"></span>${h.name}</td>
-        <td class="yr"><div><b>${h.years_with_event}</b> of ${h.window_years} years <span class="ev">· ${h.events_total} ${unitOf(h.id, h.events_total)}</span></div><div class="strip">${strip}</div></td>
+        <td class="yr"><div><b>${h.years_with_event}</b> of ${h.window_years} years <span class="ev">${h.events_total} ${unitOf(h.id, h.events_total)}</span></div><div class="strip">${strip}</div></td>
         <td class="ls">${hit.length ? hit[hit.length - 1] : '—'}</td>
         <td class="cm"><div class="bar"><span style="left:${Math.min(98, Math.max(2, h.percentile))}%;background:${c}"></span></div><div class="t">${cmp}</div></td></tr>`;
     }).join('');
@@ -318,8 +318,7 @@
       <div class="rp-counts">${counts}</div>
       <div class="rp-label">What has been recorded in ${esc(d.property.county)}</div>
       <table class="rp-sum"><thead><tr><th>Hazard</th><th>Years with recorded events, ${FIRST_YEAR}–${END_YEAR}</th><th>Last recorded</th><th>Compared with the rest of the U.S.<div class="ends"><span>Less often</span><span>More often</span></div></th></tr></thead><tbody>${rows}</tbody></table>
-      ${none.length ? `<p class="rp-none"><b>Never recorded here</b> since ${FIRST_YEAR} (${none.length} hazards): ${join(none.map(h => h.name))}.</p>` : ''}
-      ${na.length ? `<p class="rp-none"><b>Not yet included:</b> ${join(na.map(h => h.name))}. These come from USGS records, which we are adding next.</p>` : ''}
+      ${none.length || na.length ? `<div class="rp-never">${none.length ? `<div class="h">Never recorded in ${esc(d.property.county)} since ${FIRST_YEAR} <span>(${none.length} of ${d.hazards.length} hazards)</span></div><div class="chips">${none.map(h => h.name).join('<i>·</i>')}</div>` : ''}${na.length ? `<div class="na"><b>Not yet included:</b> ${join(na.map(h => h.name))}. These come from USGS records, which we are adding next.</div>` : ''}</div>` : ''}
       <div class="rp-legend">Each square is one year, ${FIRST_YEAR} on the left. A square is filled when NOAA recorded at least one event of that hazard in the county that year: for most hazards, one that caused damage, injury or death; for heat, cold, drought, winter weather and coastal flooding, any recorded event. A hurricane counts once per named storm, when its path came within 150 miles and it left recorded damage in the county. The colored dot shows the comparison. The comparison ranks ${esc(d.property.county)} among all 3,144 U.S. counties by how often each hazard has been recorded. Source: NOAA Storm Events Database. This is a record of the past, not a forecast.</div></div>` + footer(d, 2));
   }
 
