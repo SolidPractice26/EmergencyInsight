@@ -79,6 +79,18 @@
       ? `You searched for ZIP code <b>${esc2(loc.zip_area)}</b> in ${esc2(loc.state_name)}. This report covers <b>${esc2(loc.county)}</b>.${loc.zip_note ? esc2(loc.zip_note) : ''}`
       : `This report covers <b>${esc2(loc.county)}</b>, ${esc2(loc.state_name)}.`;
     document.getElementById('flow-place').textContent = loc.zip_area ? `ZIP code ${loc.zip_area}` : loc.county;
+    // area summary on the left
+    const decl = data.declarations || [];
+    const nAbove = data.hazards.filter(h => h.group === 'above').length;
+    document.getElementById('flow-stats').innerHTML =
+      `<div><b>${nAbove}</b><span>hazard${nAbove === 1 ? '' : 's'} recorded more often than in most of the U.S.</span></div>` +
+      `<div><b>${decl.length}</b><span>federal disaster declaration${decl.length === 1 ? '' : 's'} since 2016</span></div>` +
+      `<div><b>${data.storms.length}</b><span>named storm${data.storms.length === 1 ? '' : 's'} with recorded damage since 2016</span></div>`;
+    const never = data.hazards.filter(h => !h.not_included && h.years_with_event === 0);
+    document.getElementById('flow-never').innerHTML = never.length
+      ? `<div class="area-never"><h3>Never recorded here since 2016 (${never.length} of ${data.hazards.length})</h3><div class="chips">${never.map(h => `<span>${esc2(h.name)}</span>`).join('')}</div></div>` : '';
+    document.getElementById('flow-latest').innerHTML = decl.length
+      ? `Most recent federal declaration: <b>${esc2(decl[0].title)}</b>, ${new Date(decl[0].date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })} (${esc2(decl[0].code)}).` : '';
     document.getElementById('flow-sub').textContent = `${loc.county}, ${loc.state_name}`;
     const above = data.hazards.filter(h => h.group === 'above');
     document.getElementById('flow-head').textContent = above.length
@@ -86,7 +98,7 @@
       : 'No hazard stands out in this area';
     const list = (above.length ? above : data.hazards.filter(h => !h.not_included && h.years_with_event > 0).slice(0, 3)).slice(0, 5);
     document.getElementById('flow-items').innerHTML = list.map(h =>
-      `<div class="item"><b>${esc2(h.name)}</b><span style="text-align: right;"><span style="font-weight: 700;">${h.years_with_event} of ${h.window_years} years</span><small style="display: block; font-size: 13px; color: var(--on-navy-muted);"><i style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${tierTint[h.tier_key] || '#a9cbe6'}; margin-right: 6px;"></i>more often than ${h.percentile}% of U.S. counties</small></span></div>`).join('');
+      `<div class="item" style="display: block; padding-block: 10px;"><div style="display: flex; justify-content: space-between; gap: 10px;"><b>${esc2(h.name)}</b><span style="font-weight: 700; white-space: nowrap;">${h.years_with_event} of ${h.window_years} years</span></div><small style="display: block; font-size: 13px; color: var(--on-navy-muted); margin-top: 2px;"><i style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${tierTint[h.tier_key] || '#a9cbe6'}; margin-right: 6px;"></i>more often than ${h.percentile}% of U.S. counties</small></div>`).join('');
     const nDecl = (data.declarations || []).length;
     document.getElementById('flow-foot').textContent = `Real NOAA records for ${loc.county}, 2016–2025, compared with every U.S. county. ${nDecl ? `Plus every federal disaster declared for the county since 2016 (${nDecl} FEMA declaration${nDecl === 1 ? '' : 's'}).` : 'No federal disaster declarations since 2016.'}`;
     document.getElementById('aud-line').innerHTML = audLines[aud];
@@ -143,4 +155,56 @@
 
   window.addEventListener('hashchange', () => show(location.hash.slice(1), true));
   show(location.hash.slice(1), false);
+})();
+
+// ---- Click to zoom: sample page images and report preview pages ----
+(function () {
+  let list = [], idx = 0, box = null;
+  function items() {
+    const view = document.querySelector('section[data-view]:not([hidden])');
+    if (!view) return [];
+    return [...view.querySelectorAll('img.shot, .shot-card img, #flow-preview-pages .rp-scale, .pages figure img')]
+      .filter((el, i, a) => a.indexOf(el) === i);
+  }
+  function show() {
+    const el = list[idx], stage = box.querySelector('.zbox-stage');
+    stage.innerHTML = '';
+    if (el.tagName === 'IMG') {
+      const img = document.createElement('img'); img.src = el.currentSrc || el.src; img.alt = el.alt || '';
+      img.addEventListener('click', () => img.classList.toggle('big'));
+      stage.appendChild(img);
+    } else {
+      const page = el.firstElementChild.cloneNode(true);
+      const w = Math.min(900, stage.clientWidth - 32), sc = w / 794;
+      page.style.transform = `scale(${sc})`;
+      const wrap = document.createElement('div'); wrap.style.width = (794 * sc) + 'px'; wrap.style.height = (1123 * sc) + 'px';
+      page.classList.add('zbox-page'); wrap.appendChild(page); stage.appendChild(wrap);
+    }
+    box.querySelector('.zbox-count').textContent = `Page ${idx + 1} of ${list.length}`;
+    stage.scrollTop = 0;
+  }
+  function open(el) {
+    list = items(); idx = Math.max(0, list.indexOf(el));
+    box = document.createElement('div'); box.className = 'zbox'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Report page');
+    box.innerHTML = '<div class="zbox-bar"><span class="zbox-count"></span><span><button type="button" class="zbox-prev" aria-label="Previous page">‹</button> <button type="button" class="zbox-next" aria-label="Next page">›</button> <button type="button" class="zbox-close" aria-label="Close">✕</button></span></div><div class="zbox-stage"></div>';
+    document.body.appendChild(box); document.body.style.overflow = 'hidden';
+    box.querySelector('.zbox-prev').onclick = () => { idx = (idx - 1 + list.length) % list.length; show(); };
+    box.querySelector('.zbox-next').onclick = () => { idx = (idx + 1) % list.length; show(); };
+    box.querySelector('.zbox-close').onclick = close;
+    box.querySelector('.zbox-stage').addEventListener('click', e => { if (e.target.classList.contains('zbox-stage')) close(); });
+    show(); box.querySelector('.zbox-close').focus();
+  }
+  function close() { if (box) { box.remove(); box = null; document.body.style.overflow = ''; } }
+  document.addEventListener('keydown', e => {
+    if (!box) return;
+    if (e.key === 'Escape') close();
+    if (e.key === 'ArrowRight') box.querySelector('.zbox-next').click();
+    if (e.key === 'ArrowLeft') box.querySelector('.zbox-prev').click();
+  });
+  document.addEventListener('click', e => {
+    const el = e.target.closest('img.shot, .shot-card img, #flow-preview-pages .rp-scale, .pages figure img');
+    if (el && !box) { e.preventDefault(); open(el); }
+  });
+  const mark = () => document.querySelectorAll('img.shot, .shot-card img, #flow-preview-pages .rp-scale').forEach(el => { el.classList.add('zoomable'); el.title = 'Click to enlarge'; });
+  mark(); new MutationObserver(mark).observe(document.getElementById('flow-preview-pages') || document.body, { childList: true });
 })();

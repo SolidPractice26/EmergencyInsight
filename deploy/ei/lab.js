@@ -374,23 +374,42 @@
       <div class="rp-label">${esc(d.page3.checklist_title)}</div><div class="rp-checks">${checks}</div></div>` + footer(d, 3));
   }
 
-  function pageDetail(d, h, i, n, pageNum) {
+  // One hazard, sized to fill half a page; two per page keeps the report compact
+  function detailBlock(d, h, i, n) {
     const ys = Object.keys(h.events_by_year), vs = ys.map(y => h.events_by_year[y]);
-    const yearly = barChart(ys, vs, 300, 95, { labelPeaksOnly: ys.length > 12, tick: (k, y) => ys.length > 12 ? (Number(y) % 5 === 0 || k === 0 || k === ys.length - 1) : true });
-    const monthly = barChart(MONTHS, h.events_by_month, 300, 95, { tick: () => true });
+    const yearly = barChart(ys, vs, 300, 78, { labelPeaksOnly: ys.length > 12, tick: (k, y) => ys.length > 12 ? (Number(y) % 5 === 0 || k === 0 || k === ys.length - 1) : true });
+    const monthly = barChart(MONTHS, h.events_by_month, 300, 78, { tick: () => true });
     const det = DETAIL[h.id] || { what: '[Detail text for this hazard is not written yet.]', ins: 'Confirm coverage for this hazard with a licensed agent.' };
-    const storms = d.storms.filter(s => s.hazards.includes(h.name));
+    const storms = d.storms.filter(s => s.hazards.includes(h.name)).slice(0, 3);
     const color = tierColor(h.tier_key);
-    return shell(header(d) + `<div class="rp-body"><div class="rp-eyebrow">Section 2 · Hazard detail ${i} of ${n}</div>
-      <div class="rp-titlerow"><h1 class="rp-h1" style="font-size:42px;">${h.name}</h1><div class="rp-rating"><div class="tr" style="color:${color}">${h.tier}</div><div class="sc">${h.rank_line}</div></div></div>
-      <p class="rp-lead">${esc(det.what)}</p>
-      <div class="rp-facts" style="--b:${color}"><div class="rp-fact"><div class="l">Compared with the U.S.</div><div class="v">${h.rank_line}</div></div><div class="rp-fact"><div class="l">History</div><div class="v">${h.history_line}</div></div><div class="rp-fact"><div class="l">Peak season</div><div class="v">${h.season}</div></div><div class="rp-fact"><div class="l">Severity</div><div class="v">${h.severity_line}</div></div></div>
-      <div class="rp-label">What has happened in ${esc(d.property.county)}</div>
-      <div class="rp-charts"><div class="rp-chart"><div class="rp-chart-t">${h.events_total} recorded ${unitOf(h.id, h.events_total)}, ${ys[0]}–${ys[ys.length - 1]}</div><div class="rp-chart-s">Events per year</div>${yearly}</div><div class="rp-chart"><div class="rp-chart-t">Most events fall in ${h.season.split(' (')[0]}</div><div class="rp-chart-s">Events by month, all years combined</div>${monthly}</div></div>
-      ${storms.length ? `<div class="rp-label">Named storms on record</div><table class="rp-events">${storms.map(s => `<tr><td>${s.date}</td><td class="n">${s.name}</td><td>${s.summary}</td></tr>`).join('')}</table>` : ''}
-      <div class="rp-ins"><div class="l">Insurance</div><div class="t">${esc(det.ins)}</div></div>
+    return `<div class="rp-block"><div class="rp-eyebrow">Hazard detail ${i} of ${n}</div>
+      <div class="rp-titlerow"><h2 class="rp-h1" style="font-size:30px;">${h.name}</h2><div class="rp-rating"><div class="tr" style="color:${color};font-size:24px;">${h.tier}</div><div class="sc">${h.rank_line}</div></div></div>
+      <p class="rp-lead" style="font-size:12.5px;margin-top:6px;">${esc(det.what)}</p>
+      <div class="rp-facts" style="--b:${color};margin-top:10px;"><div class="rp-fact"><div class="l">Compared with the U.S.</div><div class="v">${h.rank_line}</div></div><div class="rp-fact"><div class="l">History</div><div class="v">${h.history_line}</div></div><div class="rp-fact"><div class="l">Peak season</div><div class="v">${h.season}</div></div><div class="rp-fact"><div class="l">Severity</div><div class="v">${h.severity_line}</div></div></div>
+      <div class="rp-charts" style="margin-top:12px;"><div class="rp-chart"><div class="rp-chart-t">${h.events_total} recorded ${unitOf(h.id, h.events_total)}, ${ys[0]}–${ys[ys.length - 1]}</div><div class="rp-chart-s">Per year in ${esc(d.property.county)}</div>${yearly}</div><div class="rp-chart"><div class="rp-chart-t">Most fall in ${h.season.split(' (')[0]}</div><div class="rp-chart-s">By month, all years combined</div>${monthly}</div></div>
+      ${storms.length ? `<table class="rp-events" style="margin-top:8px;">${storms.map(s => `<tr><td>${s.date}</td><td class="n">${s.name}</td><td>${s.summary}</td></tr>`).join('')}</table>` : ''}
+      <div class="rp-ins" style="margin-top:10px;padding:10px 14px;"><div class="l">Insurance</div><div class="t">${esc(det.ins)}</div></div>
+      <p class="rp-rule">${countRule(h.id, esc(d.property.county))}.</p></div>`;
+  }
+  // The rest of the recorded hazards, for a half page that would otherwise stay empty
+  function otherBlock(d) {
+    const others = d.hazards.filter(h => h.group !== 'above' && !h.not_included && h.years_with_event > 0);
+    if (!others.length) return '';
+    const last = Number(Object.keys(d.hazards[0].events_by_year).slice(-1)[0]);
+    const rows = others.slice(0, 8).map(h => {
+      const yrs = []; for (let y = last - h.window_years + 1; y <= last; y++) yrs.push(y);
+      const sq = 10;
+      const strip = `<svg width="${yrs.length * 12 - 2}" height="7" style="display:block">` + yrs.map((y, k) => `<rect x="${k * 12}" width="${sq}" height="7" rx="1" fill="${(h.events_by_year[y] || 0) > 0 ? '#3D6A93' : '#E6EDF3'}"/>`).join('') + `</svg>`;
+      return `<tr><td class="hz"><span class="dot" style="background:${tierColor(h.tier_key)}"></span>${h.name}</td><td class="yr"><div><b>${h.years_with_event}</b> of ${h.window_years} years <span class="ev">${h.events_total} ${unitOf(h.id, h.events_total)}</span></div></td><td class="cm"><div class="t">${h.percentile >= 50 ? `More often than in <b>${h.percentile}%</b> of U.S. counties` : `Less often than in <b>${100 - h.percentile}%</b> of U.S. counties`}</div><div class="t">Peak: ${h.season.split(' (')[0]}</div></td></tr>`;
+    }).join('');
+    return `<div class="rp-block"><div class="rp-eyebrow">Also recorded here</div><h2 class="rp-h1" style="font-size:26px;">Other hazards on record</h2>
+      <p class="rp-lead" style="font-size:12.5px;margin-top:6px;">These were recorded in ${esc(d.property.county)} but not more often than in most of the country. Their full history is summarized on page 2.</p>
+      <table class="rp-sum" style="margin-top:10px;"><tbody>${rows}</tbody></table></div>`;
+  }
+  function pageDetails(d, blocks, pageNum) {
+    return shell(header(d) + `<div class="rp-body"><div class="rp-eyebrow" style="margin-bottom:6px;">Section 2 · Hazards that stand out</div>${blocks.join('<div class="rp-divide"></div>')}
       <p class="rp-bottomnote">${d.report.real_data
-        ? `Source: NOAA Storm Events Database, ${FIRST_YEAR}–${END_YEAR}${h.id === 'hurricane' ? ', matched to NOAA hurricane tracks' : ''}. ${countRule(h.id, esc(d.property.county))}. Prototype: methods are still being refined. This describes the past and is not a forecast.`
+        ? `Source: NOAA Storm Events Database, ${FIRST_YEAR}–${END_YEAR}; hurricanes matched to NOAA hurricane tracks (IBTrACS). Prototype: methods are still being refined. This describes the past and is not a forecast.`
         : `Events are made-up sample data for testing the layout. In the real report they come from NOAA's Storm Events Database for ${esc(d.property.county)}, ${FIRST_YEAR}–${END_YEAR}. This describes the past and is not a forecast.`}</p></div>` + footer(d, pageNum));
   }
 
@@ -409,8 +428,10 @@
   function stepTemplates(d) {
     const pages = [pageCover(d), pageSummary(d), pageProperty(d)];
     const det = d.hazards.filter(h => d.detail_pages.includes(h.id));
-    det.forEach((h, i) => pages.push(pageDetail(d, h, i + 1, det.length, 4 + i)));
-    pages.push(pageClosing(d, 4 + det.length));
+    const blocks = det.map((h, i) => detailBlock(d, h, i + 1, det.length));
+    if (blocks.length % 2 === 1 || !blocks.length) { const o = otherBlock(d); if (o) blocks.push(o); }
+    for (let k = 0; k < blocks.length; k += 2) pages.push(pageDetails(d, blocks.slice(k, k + 2), pages.length + 1));
+    pages.push(pageClosing(d, pages.length + 1));
     return pages;
   }
 
